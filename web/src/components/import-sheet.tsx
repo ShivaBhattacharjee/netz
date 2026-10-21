@@ -13,6 +13,7 @@ import type { ImportJob } from "@/lib/types";
 import { ImportStatusLabel } from "./common";
 import { canRetry, retryLabel } from "./import-actions";
 import { ImportBar, statusDetail } from "./import-progress";
+import { UnmatchedPhotos } from "./unmatched-photos";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -62,6 +63,7 @@ function Body({ job }: { job: ImportJob }) {
       </SheetHeader>
 
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5">
+        {job.unmatched_photos.length ? <UnmatchedPhotos photos={job.unmatched_photos} compact /> : null}
         {job.total_rows > 0 ? (
           <section className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between text-sm">
@@ -94,18 +96,6 @@ function Body({ job }: { job: ImportJob }) {
           {job.error && job.status !== "paused" ? <Row label="Error">{job.error}</Row> : null}
         </dl>
 
-        {job.unmatched_photos.length ? (
-          <section className="flex flex-col gap-2">
-            <span className="text-sm text-muted-foreground">Photos with no matching row</span>
-            <ul className="flex flex-wrap gap-1.5">
-              {job.unmatched_photos.map((p) => (
-                <li key={p} className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
-                  {p}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
       </div>
 
       <SheetFooter className="flex-row gap-2 border-t p-5">

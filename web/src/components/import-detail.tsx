@@ -1,12 +1,10 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getImportRows } from "@/lib/data";
 import { useImports } from "@/lib/data/store";
 import { formatBytes, formatDateTime, formatNumber, formatUsd } from "@/lib/format";
@@ -17,6 +15,7 @@ import { FilterTabs } from "./filter-tabs";
 import { ImportActions } from "./import-actions";
 import { ImportBar, statusDetail } from "./import-progress";
 import { Pagination } from "./pagination";
+import { UnmatchedPhotos } from "./unmatched-photos";
 
 type Filter = RowStatus | "all";
 
@@ -34,41 +33,6 @@ const rowColumns: ColumnDef<ImportRow>[] = [
   { id: "reason", accessorKey: "reason", header: "Reason", meta: { className: "text-muted-foreground" }, cell: ({ row }) => row.original.reason ?? "" },
 ];
 
-function UnmatchedPhotos({ photos }: { photos: string[] }) {
-  return (
-    <Collapsible className="group/photos overflow-hidden rounded-xl border border-warning/30 bg-warning/5">
-      <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm">
-        <AlertTriangle className="size-4 shrink-0 text-warning" />
-        <span className="flex-1">
-          <span className="font-medium">
-            {photos.length} photo{photos.length === 1 ? "" : "s"} didn&apos;t match any row
-          </span>
-          <span className="ml-2 text-muted-foreground">Not attached to a product. Match by SKU in the file name or the image column.</span>
-        </span>
-        <span className="flex -space-x-2">
-          {photos.slice(0, 3).map((p) => (
-            <span key={p} className="flex size-7 items-center justify-center rounded-md border-2 border-background bg-muted">
-              <ImageIcon className="size-3.5 text-muted-foreground" />
-            </span>
-          ))}
-        </span>
-        <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]/photos:rotate-180" />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <ul className="grid grid-cols-2 gap-3 border-t border-warning/20 p-4 sm:grid-cols-4 lg:grid-cols-6">
-          {photos.map((p) => (
-            <li key={p} className="flex flex-col gap-1.5">
-              <span className="flex aspect-square items-center justify-center rounded-lg bg-muted">
-                <ImageIcon className="size-5 text-muted-foreground" />
-              </span>
-              <span className="truncate font-mono text-xs text-muted-foreground">{p}</span>
-            </li>
-          ))}
-        </ul>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
 
 const statCards: { key: RowStatus; label: string; dot: string }[] = [
   { key: "done", label: "Done", dot: "bg-success" },
