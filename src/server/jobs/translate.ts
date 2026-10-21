@@ -14,14 +14,22 @@ import { publish } from "./progress";
 
 type ProductRow = typeof product.$inferSelect;
 
-export function englishFields(p: Pick<ProductRow, "title" | "descriptionHtml" | "seo">): Record<string, string> {
+export const ATTRIBUTE_FIELD_PREFIX = "attributes.";
+const UNTRANSLATED_ATTRIBUTES = new Set(["brand"]);
+
+type EnglishSource = Pick<ProductRow, "title" | "descriptionHtml" | "seo" | "attributes">;
+
+export function englishFields(p: EnglishSource): Record<string, string> {
   const fields: Record<string, string> = { title: p.title, description_html: p.descriptionHtml };
   if (p.seo?.meta_title) fields.meta_title = p.seo.meta_title;
   if (p.seo?.meta_description) fields.meta_description = p.seo.meta_description;
+  for (const [key, value] of Object.entries(p.attributes ?? {})) {
+    if (!UNTRANSLATED_ATTRIBUTES.has(key) && value.trim()) fields[`${ATTRIBUTE_FIELD_PREFIX}${key}`] = value;
+  }
   return fields;
 }
 
-export function englishSourceHash(p: Pick<ProductRow, "title" | "descriptionHtml" | "seo">) {
+export function englishSourceHash(p: EnglishSource) {
   return sha256(stableJson(englishFields(p)));
 }
 

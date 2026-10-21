@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { aiCall, importGroup, photo, product, productPhoto, sourceRow, translation, variant } from "@/db/schema";
 import type {
@@ -13,7 +13,7 @@ import type {
 } from "@/lib/types";
 import { sha256 } from "./ids";
 import { enqueueTranslate } from "./queues";
-import { englishSourceHash } from "./jobs/translate";
+import { ATTRIBUTE_FIELD_PREFIX, englishSourceHash } from "./jobs/translate";
 import { emitWebhook } from "./webhooks";
 
 type ProductRow = typeof product.$inferSelect;
@@ -27,7 +27,29 @@ function emptyUsage(): ModelUsage {
   return { model: "", input_tokens: 0, output_tokens: 0, cost_micros: 0, latency_ms: 0 };
 }
 
-async function loadRelations(rows: ProductRow[]) {
+function usageFor(ids: string[]) {
+  return db
+    .select({
+      productId: aiCall.productId,
+      model: sql<string>`(array_agg(${aiCall.model} order by ${aiCall.createdAt} desc))[1]`,
+      inputTokens: sql<number>`coalesce(sum(${aiCall.inputTokens}), 0)::int`,
+      outputTokens: sql<number>`coalesce(sum(${aiCall.outputTokens}), 0)::int`,
+      costMicros: sql<number>`coalesce(sum(${aiCall.costMicros}), 0)::bigint`,
+      latencyMs: sql<number>`coalesce(sum(${aiCall.latencyMs}) filter (where ${aiCall.task} <> 'translate'), 0)::int`,
+    })
+    .from(aiCall)
+    .where(inArray(aiCall.productId, ids))
+    .groupBy(aiCall.productId);
+}
+
+type Relations = {
+  variants: (typeof variant.$inferSelect)[];
+  photos: { productId: string; photoId: string; position: number }[];
+  translations: (typeof translation.$inferSelect)[];
+  usage: Awaited<ReturnType<typeof usageFor>>;
+};
+
+async function loadRelations(rows: ProductRow[], opts: { usage: boolean } = { usage: true }): Promise<Relations> {
   const ids = rows.map((r) => r.id);
   if (ids.length === 0) return { variants: [], photos: [], translations: [], usage: [] };
   const [variants, photos, translations, usage] = await Promise.all([
@@ -38,31 +60,26 @@ async function loadRelations(rows: ProductRow[]) {
       .where(inArray(productPhoto.productId, ids))
       .orderBy(asc(productPhoto.position)),
     db.select().from(translation).where(inArray(translation.productId, ids)),
-    db
-      .select({
-        productId: aiCall.productId,
-        model: sql<string>`(array_agg(${aiCall.model} order by ${aiCall.createdAt} desc))[1]`,
-        inputTokens: sql<number>`coalesce(sum(${aiCall.inputTokens}), 0)::int`,
-        outputTokens: sql<number>`coalesce(sum(${aiCall.outputTokens}), 0)::int`,
-        costMicros: sql<number>`coalesce(sum(${aiCall.costMicros}), 0)::bigint`,
-        latencyMs: sql<number>`coalesce(sum(${aiCall.latencyMs}) filter (where ${aiCall.task} <> 'translate'), 0)::int`,
-      })
-      .from(aiCall)
-      .where(inArray(aiCall.productId, ids))
-      .groupBy(aiCall.productId),
+    opts.usage ? usageFor(ids) : Promise.resolve([]),
   ]);
   return { variants, photos, translations, usage };
 }
 
-function toProduct(row: ProductRow, rel: Awaited<ReturnType<typeof loadRelations>>, sources: Product["sources"] = []): Product {
+function toProduct(row: ProductRow, rel: Relations, sources: Product["sources"] = []): Product {
   const english = { title: row.title, description_html: row.descriptionHtml };
   const englishSeo: SeoFields = row.seo ?? { meta_title: "", meta_description: "" };
   const own = rel.translations.filter((t) => t.productId === row.id);
 
   const translations = {} as ProductTranslations;
+  const attributeTranslations = {} as Product["attribute_translations"];
   const seo = { en: englishSeo } as Record<Locale, SeoFields>;
   for (const locale of LOCALES) {
     const byField = new Map(own.filter((t) => t.locale === locale).map((t) => [t.field, t]));
+    attributeTranslations[locale] = {};
+    for (const [key, value] of Object.entries(row.attributes)) {
+      const t = byField.get(`${ATTRIBUTE_FIELD_PREFIX}${key}`);
+      if (t && t.sourceHash === sha256(value)) attributeTranslations[locale][key] = t.text;
+    }
     translations[locale] = {} as Record<TranslatableField, FieldTranslation>;
     for (const field of TRANSLATABLE) {
       const t = byField.get(field);
@@ -99,6 +116,7 @@ function toProduct(row: ProductRow, rel: Awaited<ReturnType<typeof loadRelations
     sources,
     photos: rel.photos.filter((p) => p.productId === row.id).map((p) => `/api/photos/${p.photoId}`),
     translations,
+    attribute_translations: attributeTranslations,
     seo,
     manual_fields: row.manualFields,
     usage: usage
@@ -130,14 +148,22 @@ export async function getProduct(storeId: string, id: string): Promise<Product |
   return toProduct(row, rel, sources);
 }
 
-export async function listPublished(storeId: string): Promise<Product[]> {
-  const rows = await db
-    .select()
-    .from(product)
-    .where(and(live(storeId), eq(product.status, "approved")))
-    .orderBy(asc(product.title));
-  const rel = await loadRelations(rows);
-  return rows.map((r) => toProduct(r, rel));
+export const STOREFRONT_PAGE_SIZE = 24;
+
+export async function listPublished(storeId: string, page: number): Promise<{ products: Product[]; total: number }> {
+  const published = and(live(storeId), eq(product.status, "approved"));
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select()
+      .from(product)
+      .where(published)
+      .orderBy(asc(product.title), asc(product.id))
+      .limit(STOREFRONT_PAGE_SIZE)
+      .offset((page - 1) * STOREFRONT_PAGE_SIZE),
+    db.select({ total: count() }).from(product).where(published),
+  ]);
+  const rel = await loadRelations(rows, { usage: false });
+  return { products: rows.map((r) => toProduct(r, rel)), total };
 }
 
 export async function getPublishedByHandle(storeId: string, handle: string): Promise<Product | null> {
@@ -146,7 +172,7 @@ export async function getPublishedByHandle(storeId: string, handle: string): Pro
     .from(product)
     .where(and(live(storeId), eq(product.status, "approved"), eq(product.handle, handle)));
   if (!row) return null;
-  return toProduct(row, await loadRelations([row]));
+  return toProduct(row, await loadRelations([row], { usage: false }));
 }
 
 async function owned(storeId: string, id: string) {
@@ -244,7 +270,8 @@ export async function editProduct(storeId: string, id: string, edit: ProductEdit
     const attributes = { ...row.attributes };
     if (edit.value.trim()) attributes[edit.key] = edit.value.trim();
     else delete attributes[edit.key];
-    await db.update(product).set({ attributes, manualFields: withManual(row, "attributes") }).where(eq(product.id, id));
+    const [saved] = await db.update(product).set({ attributes, manualFields: withManual(row, "attributes") }).where(eq(product.id, id)).returning();
+    await retranslate(saved);
     return;
   }
 

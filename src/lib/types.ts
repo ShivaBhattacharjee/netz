@@ -67,6 +67,8 @@ export interface Product {
   sources: SourceRow[];
   photos: string[];
   translations: ProductTranslations;
+  /** Current translations of attribute values; a key that is missing falls back to English. */
+  attribute_translations: Record<TranslatedLocale, Record<string, string>>;
   seo: Record<Locale, SeoFields>;
   manual_fields: string[];
   usage: ModelUsage;

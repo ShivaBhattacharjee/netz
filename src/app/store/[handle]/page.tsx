@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStore } from "@/lib/auth/session";
-import { countryFor, localized, storeStrings } from "@/lib/locale";
+import { countryFor, localized, localizedAttribute, storeStrings } from "@/lib/locale";
 import { cachedPublishedByHandle } from "@/server/storefront";
 import { PhotoTile, StoreChrome } from "@/components/store-chrome";
 import { VariantPicker } from "@/components/variant-picker";
@@ -42,24 +42,15 @@ export default async function StoreProductPage({
               dangerouslySetInnerHTML={{ __html: localized(product, country.locale, "description_html") }}
             />
             <dl className="flex flex-col divide-y divide-y border-y text-compact">
-              {product.attributes.material ? (
-                <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
-                  <dt className="text-muted-foreground">{t.material}</dt>
-                  <dd>{product.attributes.material}</dd>
-                </div>
-              ) : null}
-              {product.attributes.color ? (
-                <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
-                  <dt className="text-muted-foreground">{t.color}</dt>
-                  <dd>{product.attributes.color}</dd>
-                </div>
-              ) : null}
-              {product.attributes.care ? (
-                <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
-                  <dt className="text-muted-foreground">{t.care}</dt>
-                  <dd>{product.attributes.care}</dd>
-                </div>
-              ) : null}
+              {(["material", "color", "care"] as const).map((key) => {
+                const value = localizedAttribute(product, country.locale, key);
+                return value ? (
+                  <div key={key} className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
+                    <dt className="text-muted-foreground">{t[key]}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ) : null;
+              })}
             </dl>
           </div>
         </div>

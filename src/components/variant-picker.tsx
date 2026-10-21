@@ -45,12 +45,9 @@ export function VariantPicker({
           })}
         </div>
       ) : null}
-      <div className="flex flex-col gap-2">
-        <Button size="lg" disabled={!available} className="w-full sm:w-auto sm:px-6">
-          {available ? strings.addToCart : strings.unavailable}
-        </Button>
-        <p className="text-xs text-muted-foreground">{strings.shipsIn}</p>
-      </div>
+      <Button size="lg" disabled={!available} className="w-full sm:w-auto sm:px-6">
+        {available ? strings.addToCart : strings.unavailable}
+      </Button>
     </div>
   );
 }

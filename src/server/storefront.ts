@@ -4,8 +4,8 @@ import { getPublishedByHandle, listPublished } from "./products";
 const TTL_SECONDS = 60;
 const tag = (storeId: string) => `storefront:${storeId}`;
 
-export function cachedPublished(storeId: string) {
-  return unstable_cache(() => listPublished(storeId), ["storefront-list", storeId], { tags: [tag(storeId)], revalidate: TTL_SECONDS })();
+export function cachedPublished(storeId: string, page: number) {
+  return unstable_cache(() => listPublished(storeId, page), ["storefront-list", storeId, String(page)], { tags: [tag(storeId)], revalidate: TTL_SECONDS })();
 }
 
 export function cachedPublishedByHandle(storeId: string, handle: string) {

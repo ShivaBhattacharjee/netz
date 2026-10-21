@@ -67,6 +67,7 @@ export function toJson(products: Product[]): string {
       review_reason: p.review_reason,
       source_rows: p.source_rows,
       translations: p.translations,
+      attribute_translations: p.attribute_translations,
     })),
     null,
     2,

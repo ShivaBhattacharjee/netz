@@ -35,7 +35,9 @@ export const storeStrings: Record<Locale, Record<string, string>> = {
     color: "Colour",
     back: "All products",
     noPrice: "No price yet",
-    shipsIn: "Ships in 2 to 4 working days",
+    previous: "Previous",
+    next: "Next",
+    page: "Page",
   },
   de: {
     collection: "Alle Produkte",
@@ -49,7 +51,9 @@ export const storeStrings: Record<Locale, Record<string, string>> = {
     color: "Farbe",
     back: "Alle Produkte",
     noPrice: "Noch kein Preis",
-    shipsIn: "Versand in 2 bis 4 Werktagen",
+    previous: "Zurück",
+    next: "Weiter",
+    page: "Seite",
   },
   fr: {
     collection: "Tous les produits",
@@ -63,7 +67,9 @@ export const storeStrings: Record<Locale, Record<string, string>> = {
     color: "Couleur",
     back: "Tous les produits",
     noPrice: "Pas encore de prix",
-    shipsIn: "Expédié sous 2 à 4 jours ouvrés",
+    previous: "Précédent",
+    next: "Suivant",
+    page: "Page",
   },
 };
 
@@ -71,4 +77,10 @@ export function localized(product: Product, locale: Locale, field: TranslatableF
   if (locale === "en") return product[field];
   const t = product.translations[locale][field];
   return t.state === "missing" || !t.text ? product[field] : t.text;
+}
+
+export function localizedAttribute(product: Product, locale: Locale, key: string): string | undefined {
+  const english = product.attributes[key];
+  if (locale === "en" || !english) return english;
+  return product.attribute_translations[locale][key] || english;
 }
