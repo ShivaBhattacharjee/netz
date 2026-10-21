@@ -2,7 +2,7 @@
 
 import { Boxes } from "lucide-react";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 export function OnboardingForm({ firstStore, userName }: { firstStore: boolean; userName: string }) {
   const [state, action, pending] = useActionState<CreateStoreState, FormData>(createStore, {});
+  const [requestId] = useState(() => crypto.randomUUID());
   const errors = state.fieldErrors ?? {};
   const firstName = userName.split(" ")[0];
 
@@ -42,6 +43,7 @@ export function OnboardingForm({ firstStore, userName }: { firstStore: boolean; 
         </p>
 
         <form action={action} className="mt-10 flex flex-col gap-5" noValidate>
+          <input type="hidden" name="request_id" value={requestId} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Store name</Label>
             <Input
