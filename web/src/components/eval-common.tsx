@@ -154,9 +154,6 @@ export function PromptSource({ name, onDeleted }: { name: string; onDeleted?: ()
   return (
     <div className="flex flex-col gap-2 text-xs text-muted-foreground">
       <p className="flex flex-wrap items-center gap-x-1">
-        <span>{current?.custom ? "Saved in this store" : "Loaded from"}</span>
-        {current && !current.custom ? <span className="font-mono text-foreground">{current.source}</span> : null}
-        <span>· version {current?.version ?? "…"} ·</span>
         <button type="button" className="plain-button underline underline-offset-4 hover:text-foreground" onClick={() => setOpen((o) => !o)}>
           {open ? "Hide prompt" : "Show prompt"}
         </button>
@@ -282,7 +279,7 @@ export function PromptPicker({
         <div className="min-w-0 flex-1">
           <OptionSelect id={id} label="Prompt" value={value} onChange={onChange} options={promptOptions(options)} />
         </div>
-        <Button variant="outline" onClick={() => setCreating(true)}>
+        <Button variant="outline" className="h-10 px-4" onClick={() => setCreating(true)}>
           <Plus data-icon="inline-start" />
           New prompt
         </Button>
