@@ -1,30 +1,30 @@
 "use client";
 
 import { useEffect } from "react";
-import { actions } from "./data/store";
+import { actions, refreshProduct, resetForStore, scheduleRefresh } from "./data/store";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export function useImportStream() {
+export function useImportStream(storeId: string) {
   useEffect(() => {
-    if (!API_URL) {
-      actions.setLive("live");
-      const id = window.setInterval(actions.tick, 1000);
-      return () => window.clearInterval(id);
-    }
-
+    resetForStore(storeId);
     let source: EventSource | null = null;
     let retry: number | undefined;
     let delay = 1000;
 
     const connect = () => {
       actions.setLive("connecting");
-      source = new EventSource(`${API_URL}/v1/imports/stream`, { withCredentials: true });
-      source.onopen = () => {
+      source = new EventSource("/api/imports/stream");
+      source.addEventListener("ready", () => {
         delay = 1000;
         actions.setLive("live");
-      };
-      source.addEventListener("import.progress", () => actions.tick());
+        scheduleRefresh(true);
+      });
+      source.addEventListener("import.progress", () => scheduleRefresh(false));
+      source.addEventListener("import.completed", () => scheduleRefresh(true));
+      source.addEventListener("import.failed", () => scheduleRefresh(false));
+      source.addEventListener("product.updated", (e) => {
+        const { productId } = JSON.parse((e as MessageEvent<string>).data) as { productId: string };
+        refreshProduct(productId);
+      });
       source.onerror = () => {
         source?.close();
         actions.setLive("offline");
@@ -38,5 +38,5 @@ export function useImportStream() {
       window.clearTimeout(retry);
       source?.close();
     };
-  }, []);
+  }, [storeId]);
 }

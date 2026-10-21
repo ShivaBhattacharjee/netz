@@ -6,7 +6,7 @@ import type { Country } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 import { CountrySwitcher } from "./country-switcher";
 
-export function StoreChrome({ country, children }: { country: Country; children: ReactNode }) {
+export function StoreChrome({ country, storeName, children }: { country: Country; storeName: string; children: ReactNode }) {
   return (
     <div lang={country.locale} className="min-h-svh">
       <div className="border-b bg-muted/40">
@@ -33,7 +33,7 @@ export function StoreChrome({ country, children }: { country: Country; children:
       <header className="border-b">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center px-4 md:px-8">
           <Link href={`/store?country=${country.code}`} className="text-lg font-semibold tracking-tight">
-            Atelier Terra
+            {storeName}
           </Link>
         </div>
       </header>
@@ -44,10 +44,8 @@ export function StoreChrome({ country, children }: { country: Country; children:
   );
 }
 
-export function PhotoTile({ name, className }: { name?: string; className?: string }) {
-  return (
-    <div className={cn("flex aspect-[4/5] items-end rounded-lg bg-muted p-3", className)}>
-      {name ? <span className="truncate font-mono text-xs text-muted-foreground">{name}</span> : null}
-    </div>
-  );
+export function PhotoTile({ src, className }: { src?: string; className?: string }) {
+  if (!src) return <div className={cn("aspect-[4/5] rounded-lg bg-muted", className)} />;
+  // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
+  return <img src={src} alt="" loading="lazy" className={cn("aspect-[4/5] w-full rounded-lg bg-muted object-cover", className)} />;
 }

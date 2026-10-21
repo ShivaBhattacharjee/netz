@@ -21,8 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getImportRows } from "@/lib/data";
-import { actions } from "@/lib/data/store";
+import { actions, fetchImportRows } from "@/lib/data/store";
 import { download } from "@/lib/export";
 import { formatNumber } from "@/lib/format";
 import type { ImportJob } from "@/lib/types";
@@ -42,8 +41,8 @@ export function retryLabel(job: ImportJob) {
     : `Retry ${formatNumber(job.counts.failed)} failed row${job.counts.failed === 1 ? "" : "s"}`;
 }
 
-function downloadFailed(job: ImportJob) {
-  const rows = getImportRows(job).filter((r) => r.status === "failed");
+export async function downloadFailed(job: ImportJob) {
+  const rows = await fetchImportRows(job.id, "failed");
   const csv = ["row,sku,reason", ...rows.map((r) => `${r.row},${r.sku},"${(r.reason ?? "").replace(/"/g, '""')}"`)].join("\n");
   download(`${job.file_name.replace(/\.[^.]+$/, "")}-failed-rows.csv`, csv, "text/csv");
 }
@@ -55,7 +54,7 @@ export function ImportActions({ job, showView = true, onDeleted }: { job: Import
   return (
     <div className="flex items-center justify-end gap-0.5">
       <span className="flex size-7 items-center justify-center">
-        {canRetry(job) ? <IconButton label={retryLabel(job)} icon={RotateCw} onClick={() => actions.retryFailed(job.id)} /> : null}
+        {canRetry(job) ? <IconButton label={retryLabel(job)} icon={RotateCw} onClick={() => void actions.retry(job.id)} /> : null}
       </span>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
@@ -73,13 +72,13 @@ export function ImportActions({ job, showView = true, onDeleted }: { job: Import
             </DropdownMenuItem>
           ) : null}
           {canRetry(job) ? (
-            <DropdownMenuItem onSelect={() => actions.retryFailed(job.id)}>
+            <DropdownMenuItem onSelect={() => void actions.retry(job.id)}>
               <RotateCw />
               {retryLabel(job)}
             </DropdownMenuItem>
           ) : null}
           {job.counts.failed > 0 ? (
-            <DropdownMenuItem onSelect={() => downloadFailed(job)}>
+            <DropdownMenuItem onSelect={() => void downloadFailed(job)}>
               <Download />
               Download failed rows
             </DropdownMenuItem>
@@ -116,11 +115,8 @@ export function ImportActions({ job, showView = true, onDeleted }: { job: Import
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                if (confirm === "cancel") actions.cancelImport(job.id);
-                else {
-                  onDeleted?.();
-                  actions.deleteImport(job.id);
-                }
+                if (confirm === "cancel") void actions.cancelImport(job.id);
+                else void actions.deleteImport(job.id).then((ok) => ok && onDeleted?.());
               }}
             >
               {confirm === "cancel" ? "Cancel import" : "Delete import"}

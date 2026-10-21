@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { actions, useProducts } from "@/lib/data/store";
+import { actions, useProduct } from "@/lib/data/store";
 import { formatDuration, formatMoney, formatNumber, formatUsd, formatWeight } from "@/lib/format";
 import type { FieldTranslation, Product, TranslatableField, TranslatedLocale } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,9 +27,8 @@ import { Confidence, PageHeader, ProductStatusLabel, StatusLabel } from "./commo
 import { RerunDialog } from "./rerun-dialog";
 import type { Locale } from "@/lib/types";
 
-const sourceColumns = ["SKU", "Name", "Size", "Colour", "Price", "Weight", "Notes", "Description"];
-
 function SourcePanel({ product, highlight }: { product: Product; highlight: number | null }) {
+  const sourceColumns = [...new Set(product.sources.flatMap((s) => Object.keys(s.cells)))];
   return (
     <Card className="gap-0 overflow-hidden py-0">
       <CardHeader className="flex flex-row items-center justify-between border-b px-4 py-3">
@@ -66,7 +65,7 @@ function SourcePanel({ product, highlight }: { product: Product; highlight: numb
                     key={s.row}
                     className={cn(
                       "px-4 py-2 break-words",
-                      (c === "SKU" || c === "Description") && "font-mono text-xs",
+                      /<|^[A-Z0-9-]{4,}$/.test(product.sources[0]?.cells[c] ?? "") && "font-mono text-xs",
                       highlight === s.row && "bg-warning/10",
                     )}
                   >
@@ -81,9 +80,8 @@ function SourcePanel({ product, highlight }: { product: Product; highlight: numb
       <div className="flex gap-2 overflow-x-auto border-t p-4">
         {product.photos.length ? (
           product.photos.map((p) => (
-            <div key={p} className="flex size-24 shrink-0 items-end rounded-md bg-muted p-1.5">
-              <span className="truncate font-mono text-[10px] text-muted-foreground">{p}</span>
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
+            <img key={p} src={p} alt="" loading="lazy" className="size-24 shrink-0 rounded-md bg-muted object-cover" />
           ))
         ) : (
           <span className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -366,10 +364,11 @@ function SendBack({ product }: { product: Product }) {
 }
 
 export function ProductReview({ id }: { id: string }) {
-  const product = useProducts().find((p) => p.id === id);
+  const { product, ready } = useProduct(id);
   const [highlight, setHighlight] = useState<number | null>(null);
 
   if (!product) {
+    if (!ready) return null;
     return (
       <PageHeader
         title="Product not found"

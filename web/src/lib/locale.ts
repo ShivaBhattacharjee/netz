@@ -1,4 +1,4 @@
-import type { Locale } from "./types";
+import type { Locale, Product, TranslatableField } from "./types";
 
 export interface Country {
   code: string;
@@ -66,3 +66,9 @@ export const storeStrings: Record<Locale, Record<string, string>> = {
     shipsIn: "Expédié sous 2 à 4 jours ouvrés",
   },
 };
+
+export function localized(product: Product, locale: Locale, field: TranslatableField): string {
+  if (locale === "en") return product[field];
+  const t = product.translations[locale][field];
+  return t.state === "missing" || !t.text ? product[field] : t.text;
+}

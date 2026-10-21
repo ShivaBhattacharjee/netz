@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useImports } from "@/lib/data/store";
+import { useImports, useImportsReady } from "@/lib/data/store";
 import { formatBytes, formatDateTime, formatNumber, formatUsd } from "@/lib/format";
 import { ImportStatusLabel } from "./common";
 import { EmptyState } from "./empty-state";
@@ -12,7 +12,10 @@ import { UploadButton } from "./upload-dialog";
 
 export function ImportQueue() {
   const imports = useImports();
+  const ready = useImportsReady();
   const [selected, setSelected] = useState<string | null>(null);
+
+  if (!ready) return null;
 
   if (imports.length === 0) {
     return (

@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { getImportRows } from "@/lib/data";
 import { actions } from "@/lib/data/store";
-import { download } from "@/lib/export";
 import { formatBytes, formatDateTime, formatNumber, formatUsd } from "@/lib/format";
 import type { ImportJob } from "@/lib/types";
 import { ImportStatusLabel } from "./common";
-import { canRetry, retryLabel } from "./import-actions";
+import { canRetry, downloadFailed, retryLabel } from "./import-actions";
 import { ImportBar, statusDetail } from "./import-progress";
 import { UnmatchedPhotos } from "./unmatched-photos";
 
@@ -45,11 +43,6 @@ function Body({ job }: { job: ImportJob }) {
     { label: "Failed", value: job.counts.failed, dot: "bg-error" },
     { label: "Pending", value: job.counts.pending, dot: "bg-muted-foreground/50" },
   ];
-
-  function downloadFailed() {
-    const rows = getImportRows(job).filter((r) => r.status === "failed");
-    download(`${job.file_name.replace(/\.[^.]+$/, "")}-failed-rows.csv`, ["row,sku,reason", ...rows.map((r) => `${r.row},${r.sku},"${r.reason ?? ""}"`)].join("\n"), "text/csv");
-  }
 
   return (
     <>
@@ -100,13 +93,13 @@ function Body({ job }: { job: ImportJob }) {
 
       <SheetFooter className="flex-row gap-2 border-t p-5">
         {canRetry(job) ? (
-          <Button variant="outline" onClick={() => actions.retryFailed(job.id)}>
+          <Button variant="outline" onClick={() => void actions.retry(job.id)}>
             <RotateCw data-icon="inline-start" />
             {retryLabel(job)}
           </Button>
         ) : null}
         {job.counts.failed > 0 ? (
-          <Button variant="outline" size="icon" aria-label="Download failed rows" onClick={downloadFailed}>
+          <Button variant="outline" size="icon" aria-label="Download failed rows" onClick={() => void downloadFailed(job)}>
             <Download />
           </Button>
         ) : null}

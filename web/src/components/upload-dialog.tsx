@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { api } from "@/lib/data/api";
 import { actions } from "@/lib/data/store";
+import type { ImportJob } from "@/lib/types";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const MB = 1024 * 1024;
-const LIMITS = { sheet: 25 * MB, zip: 500 * MB, photo: 10 * MB, rows: 10_000, photos: 2_000 };
+const LIMITS = { sheet: 25 * MB, zip: 1024 * MB, photo: 10 * MB, rows: 10_000, photos: 2_000 };
+const PARALLEL_UPLOADS = 4;
 
 type Kind = "sheet" | "zip" | "photo";
 
@@ -18,7 +21,7 @@ function kindOf(name: string): Kind | null {
   const ext = name.toLowerCase().split(".").pop() ?? "";
   if (ext === "csv" || ext === "xlsx") return "sheet";
   if (ext === "zip") return "zip";
-  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return "photo";
+  if (["jpg", "jpeg", "png", "webp", "gif", "heic"].includes(ext)) return "photo";
   return null;
 }
 
@@ -30,9 +33,27 @@ interface Staged {
 
 const empty: Staged = { sheet: null, zips: [], photos: [] };
 
-async function countCsvRows(file: File): Promise<number> {
-  const text = await file.text();
-  return Math.max(0, text.split(/\r\n|\n|\r/).filter((l) => l.trim().length > 0).length - 1);
+async function uploadFile(file: File, kind: Kind): Promise<string> {
+  const { id } = await api<{ id: string }>(`/api/uploads?kind=${kind}`, {
+    method: "POST",
+    headers: { "x-file-name": encodeURIComponent(file.name) },
+    body: file,
+  });
+  return id;
+}
+
+async function uploadAll(files: { file: File; kind: Kind }[], onDone: () => void): Promise<string[]> {
+  const ids: string[] = new Array(files.length);
+  let next = 0;
+  async function lane() {
+    while (next < files.length) {
+      const i = next++;
+      ids[i] = await uploadFile(files[i].file, files[i].kind);
+      onDone();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(PARALLEL_UPLOADS, files.length) }, lane));
+  return ids;
 }
 
 export function UploadButton({ label = "Upload", size }: { label?: string; size?: "default" | "lg" }) {
@@ -42,7 +63,8 @@ export function UploadButton({ label = "Upload", size }: { label?: string; size?
   const [staged, setStaged] = useState<Staged>(empty);
   const [errors, setErrors] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [starting, setStarting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const starting = progress !== null;
 
   function addFiles(list: FileList | File[]) {
     const next: Staged = { sheet: staged.sheet, zips: [...staged.zips], photos: [...staged.photos] };
@@ -83,21 +105,28 @@ export function UploadButton({ label = "Upload", size }: { label?: string; size?
 
   async function start() {
     if (!staged.sheet) return;
-    setStarting(true);
-    const rows = staged.sheet.name.toLowerCase().endsWith(".csv") ? await countCsvRows(staged.sheet) : 250;
-    setStarting(false);
-    if (rows === 0) {
-      setErrors([`${staged.sheet.name} has no data rows under the header.`]);
-      return;
+    const files = [
+      { file: staged.sheet, kind: "sheet" as const },
+      ...staged.zips.map((file) => ({ file, kind: "zip" as const })),
+      ...staged.photos.map((file) => ({ file, kind: "photo" as const })),
+    ];
+    setErrors([]);
+    setProgress({ done: 0, total: files.length });
+    try {
+      const [sheetId, ...photoIds] = await uploadAll(files, () => setProgress((p) => (p ? { ...p, done: p.done + 1 } : p)));
+      const { import: job } = await api<{ import: ImportJob }>("/api/imports", {
+        method: "POST",
+        json: { sheet_upload_id: sheetId, photo_upload_ids: photoIds },
+      });
+      actions.importCreated(job);
+      reset();
+      setOpen(false);
+      router.push(`/imports/${job.id}`);
+    } catch (error) {
+      setErrors([error instanceof Error ? error.message : "Upload failed, please try again."]);
+    } finally {
+      setProgress(null);
     }
-    if (rows > LIMITS.rows) {
-      setErrors([`${staged.sheet.name} has ${formatNumber(rows)} rows. The limit is ${formatNumber(LIMITS.rows)}, so split the sheet.`]);
-      return;
-    }
-    const id = actions.addImport(staged.sheet, staged.photos.length, rows);
-    reset();
-    setOpen(false);
-    router.push(`/imports/${id}`);
   }
 
   const hasFiles = Boolean(staged.sheet || staged.zips.length || staged.photos.length);
@@ -106,6 +135,7 @@ export function UploadButton({ label = "Upload", size }: { label?: string; size?
     <Dialog
       open={open}
       onOpenChange={(o) => {
+        if (!o && starting) return;
         setOpen(o);
         if (!o) reset();
       }}
@@ -153,7 +183,7 @@ export function UploadButton({ label = "Upload", size }: { label?: string; size?
           type="file"
           multiple
           hidden
-          accept=".csv,.xlsx,.zip,.jpg,.jpeg,.png,.webp"
+          accept=".csv,.xlsx,.zip,.jpg,.jpeg,.png,.webp,.gif,.heic"
           onChange={(e) => {
             if (e.target.files) addFiles(e.target.files);
             e.target.value = "";
@@ -199,7 +229,7 @@ export function UploadButton({ label = "Upload", size }: { label?: string; size?
             Cancel
           </Button>
           <Button disabled={!staged.sheet || starting} onClick={start}>
-            {starting ? "Starting" : "Start import"}
+            {progress ? `Uploading ${formatNumber(progress.done)} of ${formatNumber(progress.total)}` : "Start import"}
           </Button>
         </DialogFooter>
       </DialogContent>

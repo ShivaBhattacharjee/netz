@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { localized, publishedProducts } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
-import { countryFor, storeStrings } from "@/lib/locale";
+import { requireStore } from "@/lib/auth/session";
+import { countryFor, localized, storeStrings } from "@/lib/locale";
+import { listPublished } from "@/server/products";
 import { PhotoTile, StoreChrome } from "@/components/store-chrome";
 
 export default async function CollectionPage({ searchParams }: { searchParams: Promise<{ country?: string }> }) {
   const country = countryFor((await searchParams).country);
   const t = storeStrings[country.locale];
-  const products = publishedProducts();
+  const { active } = await requireStore();
+  const products = await listPublished(active.id);
 
   return (
-    <StoreChrome country={country}>
+    <StoreChrome country={country} storeName={active.name}>
       <div className="flex flex-col gap-8">
         <div className="flex items-baseline justify-between gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">{t.collection}</h1>
@@ -25,7 +27,7 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
             return (
               <li key={p.id}>
                 <Link href={`/store/${p.handle}?country=${country.code}`} className="group flex flex-col gap-3">
-                  <PhotoTile name={p.photos[0]} />
+                  <PhotoTile src={p.photos[0]} />
                   <div className="flex flex-col gap-0.5">
                     <span className="text-compact group-hover:underline">{localized(p, country.locale, "title")}</span>
                     <span className="text-compact text-muted-foreground tabular-nums">

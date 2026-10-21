@@ -8,17 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { actions } from "@/lib/data/store";
+import { RERUN_MODELS } from "@/lib/models";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-const models = [
-  { id: "claude-haiku-5-5", label: "Haiku 5.5", hint: "Fast, lowest cost" },
-  { id: "claude-sonnet-5-5", label: "Sonnet 5.5", hint: "Messy rows, photos" },
-  { id: "claude-opus-5-5", label: "Opus 5.5", hint: "Hardest cases" },
-];
 
 const fieldOptions = [
   { id: "title", label: "Title" },
@@ -27,23 +21,29 @@ const fieldOptions = [
   { id: "attributes", label: "Attributes" },
   { id: "claims", label: "Claims" },
   { id: "seo", label: "SEO fields" },
-  { id: "translations", label: "Translations" },
 ];
 
 export function RerunDialog({ ids, onDone, trigger }: { ids: string[]; onDone?: () => void; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [model, setModel] = useState(models[1].id);
-  const [prompt, setPrompt] = useState("v4");
+  const [model, setModel] = useState<string>(RERUN_MODELS[1].id);
+  const [busy, setBusy] = useState(false);
   const [fields, setFields] = useState<string[]>(["title", "description_html", "category", "attributes", "claims"]);
   const [note, setNote] = useState("");
 
-  function submit() {
-    actions.rerun(ids, { model, prompt, fields, note });
-    toast.success(`Queued ${formatNumber(ids.length)} product${ids.length === 1 ? "" : "s"} for regeneration`, {
-      description: `${models.find((m) => m.id === model)?.label} · prompt ${prompt} · ${fields.length} fields`,
-    });
-    setOpen(false);
-    onDone?.();
+  async function submit() {
+    setBusy(true);
+    try {
+      const queued = await actions.rerun(ids, { model, fields, note });
+      toast.success(`Queued ${formatNumber(queued)} product${queued === 1 ? "" : "s"} for regeneration`, {
+        description: `${RERUN_MODELS.find((m) => m.id === model)?.label} · ${fields.length} fields`,
+      });
+      setOpen(false);
+      onDone?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not queue the re-run");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -66,7 +66,7 @@ export function RerunDialog({ ids, onDone, trigger }: { ids: string[]; onDone?: 
           <div className="flex flex-col gap-2">
             <Label>Model</Label>
             <RadioGroup value={model} onValueChange={setModel} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {models.map((m) => (
+              {RERUN_MODELS.map((m) => (
                 <Label
                   key={m.id}
                   htmlFor={m.id}
@@ -83,20 +83,6 @@ export function RerunDialog({ ids, onDone, trigger }: { ids: string[]; onDone?: 
                 </Label>
               ))}
             </RadioGroup>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="prompt-version">Prompt version</Label>
-            <Select value={prompt} onValueChange={setPrompt}>
-              <SelectTrigger id="prompt-version" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="v4">v4 (current)</SelectItem>
-                <SelectItem value="v4-claims">v4-claims (experiment)</SelectItem>
-                <SelectItem value="v3">v3 (previous)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -124,7 +110,7 @@ export function RerunDialog({ ids, onDone, trigger }: { ids: string[]; onDone?: 
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button disabled={fields.length === 0} onClick={submit}>
+          <Button disabled={fields.length === 0 || busy} onClick={() => void submit()}>
             Queue re-run
           </Button>
         </SheetFooter>

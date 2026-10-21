@@ -25,11 +25,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { actions, useProducts } from "@/lib/data/store";
+import { actions, useProducts, useProductsReady } from "@/lib/data/store";
 import { download, toCsv, toJson, toShopifyCsv } from "@/lib/export";
 import { formatMoney, formatNumber, minConfidence } from "@/lib/format";
 import type { Product, ProductStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useActiveStore } from "./active-store";
 import { Confidence, PageHeader, ProductStatusLabel } from "./common";
 import { DataTable, SortableHeader } from "./data-table";
 import { EmptyState } from "./empty-state";
@@ -140,6 +141,8 @@ function searchFilter(row: { original: Product }, _id: string, query: string) {
 
 export function ProductsTable() {
   const products = useProducts();
+  const ready = useProductsReady();
+  const activeStore = useActiveStore();
   const [sorting, setSorting] = useState<SortingState>([{ id: "status", desc: false }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([
     { id: "status", value: "all" },
@@ -189,9 +192,11 @@ export function ProductsTable() {
   function exportAs(kind: "csv" | "json" | "shopify") {
     const rows = selectedIds.length ? products.filter((p) => rowSelection[p.id]) : filtered;
     if (kind === "csv") download("catalog.csv", toCsv(rows), "text/csv");
-    else if (kind === "shopify") download("shopify-products.csv", toShopifyCsv(rows, "Atelier Terra"), "text/csv");
+    else if (kind === "shopify") download("shopify-products.csv", toShopifyCsv(rows, activeStore.name), "text/csv");
     else download("catalog.json", toJson(rows), "application/json");
   }
+
+  if (!ready) return <PageHeader title="Products" />;
 
   if (products.length === 0) {
     return (
@@ -291,7 +296,7 @@ export function ProductsTable() {
               <Button
                 disabled={approvable.length === 0}
                 onClick={() => {
-                  actions.approve(approvable);
+                  void actions.approve(approvable);
                   table.resetRowSelection();
                 }}
               >

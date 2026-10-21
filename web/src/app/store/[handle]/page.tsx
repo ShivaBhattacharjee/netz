@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { localized, publishedProducts } from "@/lib/data";
-import { countryFor, storeStrings } from "@/lib/locale";
+import { requireStore } from "@/lib/auth/session";
+import { countryFor, localized, storeStrings } from "@/lib/locale";
+import { getPublishedByHandle } from "@/server/products";
 import { PhotoTile, StoreChrome } from "@/components/store-chrome";
 import { VariantPicker } from "@/components/variant-picker";
 
@@ -14,14 +15,15 @@ export default async function StoreProductPage({
 }) {
   const { handle } = await params;
   const country = countryFor((await searchParams).country);
-  const product = publishedProducts().find((p) => p.handle === handle);
+  const { active } = await requireStore();
+  const product = await getPublishedByHandle(active.id, handle);
   if (!product) notFound();
 
   const t = storeStrings[country.locale];
   const photos = product.photos.length ? product.photos : [undefined];
 
   return (
-    <StoreChrome country={country}>
+    <StoreChrome country={country} storeName={active.name}>
       <div className="flex flex-col gap-6">
         <Link href={`/store?country=${country.code}`} className="text-compact text-muted-foreground hover:text-foreground">
           {t.back}
@@ -29,7 +31,7 @@ export default async function StoreProductPage({
         <div className="grid gap-8 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:gap-12">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {photos.map((p, i) => (
-              <PhotoTile key={p ?? i} name={p} className={i === 0 ? "sm:col-span-2" : ""} />
+              <PhotoTile key={p ?? i} src={p} className={i === 0 ? "sm:col-span-2" : ""} />
             ))}
           </div>
           <div className="flex flex-col gap-8">

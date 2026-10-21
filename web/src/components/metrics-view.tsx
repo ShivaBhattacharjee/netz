@@ -1,16 +1,16 @@
 "use client";
 
 import { Activity, Clock, Coins, Cpu, Filter, Gauge, Languages, Layers, PackageCheck, PieChart as PieIcon, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Label, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { costHistory, modelPricing } from "@/lib/data";
-import { useImports, useProducts } from "@/lib/data/store";
+import { api } from "@/lib/data/api";
+import { useDataVersion } from "@/lib/data/store";
+import type { Metrics } from "@/lib/types";
 import { formatDuration, formatNumber, formatPercent, formatUsd } from "@/lib/format";
 import { PageHeader, Panel, StatCard } from "./common";
 
-const STRONG = "claude-sonnet-5-5";
 const shortDay = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
 const throughputConfig = {
@@ -47,73 +47,66 @@ function Legend({ items }: { items: { label: string; color: string; value?: stri
   );
 }
 
+function useMetrics(days: string) {
+  const version = useDataVersion();
+  const [data, setData] = useState<Metrics | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api<Metrics>(`/api/metrics?days=${days}`)
+      .then((d) => !cancelled && (setData(d), setError(null)))
+      .catch((e: Error) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [days, version]);
+  return { data, error };
+}
+
 export function MetricsView() {
-  const products = useProducts();
-  const imports = useImports();
   const [range, setRange] = useState("14");
+  const { data, error } = useMetrics(range);
 
   const m = useMemo(() => {
-    const total = products.length;
-    const by = { approved: 0, ready: 0, needs_review: 0, failed: 0 };
-    products.forEach((p) => (by[p.status] += 1));
-    const cost = products.reduce((a, p) => a + p.usage.cost_micros, 0);
-    const strong = modelPricing[STRONG];
-    const baseline = products.reduce((a, p) => a + p.usage.input_tokens * strong.input + p.usage.output_tokens * strong.output, 0);
-
-    const models = new Map<string, { products: number; cost: number }>();
-    products.forEach((p) => {
-      const e = models.get(p.usage.model) ?? { products: 0, cost: 0 };
-      e.products += 1;
-      e.cost += p.usage.cost_micros;
-      models.set(p.usage.model, e);
-    });
-
-    const latencies = products.map((p) => p.usage.latency_ms).sort((a, b) => a - b);
-    const avg = latencies.reduce((a, b) => a + b, 0) / Math.max(1, latencies.length);
-    const p95 = latencies[Math.floor(latencies.length * 0.95)] ?? 0;
-    const edges = [0, 2000, 4000, 6000, 10000, Infinity];
-    const labels = ["<2s", "2–4s", "4–6s", "6–10s", "10s+"];
-    const buckets = labels.map((bucket, i) => ({ bucket, count: latencies.filter((l) => l >= edges[i] && l < edges[i + 1]).length }));
-
-    const coverage = (["de", "fr"] as const).map((locale) => {
-      const c = { language: locale === "de" ? "German" : "French", current: 0, outOfDate: 0, missing: 0, total: 0 };
-      products.forEach((p) =>
-        Object.values(p.translations[locale]).forEach((t) => {
-          c.total += 1;
-          if (t.state === "current") c.current += 1;
-          else if (t.state === "out_of_date") c.outOfDate += 1;
-          else c.missing += 1;
-        }),
-      );
-      return c;
-    });
-
-    const rows = imports.reduce((a, j) => a + j.total_rows, 0);
-    const finished = imports.reduce((a, j) => a + j.total_rows - j.counts.pending, 0);
-    const built = imports.reduce((a, j) => a + j.counts.done + j.counts.needs_review, 0);
-    const funnel = [
-      { label: "Rows uploaded", value: rows },
-      { label: "Cleaned and grouped", value: finished },
-      { label: "Built by AI", value: built },
-      { label: "Approved and live", value: Math.round(built * (by.approved / Math.max(1, total))) },
-    ];
-
+    if (!data) return null;
     return {
-      total,
-      by,
-      cost,
-      baseline,
-      avg,
-      p95,
-      buckets,
-      coverage,
-      funnel,
-      models: [...models.entries()].map(([model, v]) => ({ model: model.replace("claude-", ""), ...v, cost: v.cost / 1_000_000 })),
-      outcomes: (Object.keys(by) as (keyof typeof by)[]).map((k) => ({ status: k, value: by[k], fill: `var(--color-${k})` })),
+      total: data.total,
+      by: data.by,
+      cost: data.cost_micros,
+      baseline: data.baseline_micros,
+      avg: data.avg_ms,
+      p95: data.p95_ms,
+      buckets: data.latency,
+      coverage: data.coverage,
+      funnel: data.funnel,
+      models: data.models.map((md) => ({ model: md.model, products: md.products, cost: md.cost_micros / 1_000_000 })),
+      outcomes: (Object.keys(data.by) as (keyof typeof data.by)[]).map((k) => ({ status: k, value: data.by[k], fill: `var(--color-${k})` })),
     };
-  }, [products, imports]);
+  }, [data]);
 
-  const daily = costHistory.slice(-Number(range)).map((d) => ({
+  const header = (
+    <PageHeader
+      title="Overview"
+      meta="Throughput, quality and AI spend across all imports"
+      actions={
+        <ToggleGroup type="single" variant="outline" size="sm" value={range} onValueChange={(v) => v && setRange(v)}>
+          <ToggleGroupItem value="7">7 days</ToggleGroupItem>
+          <ToggleGroupItem value="14">14 days</ToggleGroupItem>
+        </ToggleGroup>
+      }
+    />
+  );
+
+  if (!data || !m) {
+    return (
+      <>
+        {header}
+        {error ? <p className="text-sm text-error">{error}</p> : null}
+      </>
+    );
+  }
+
+  const daily = data.daily.map((d) => ({
     day: shortDay(d.day),
     done: d.done,
     review: d.review,
@@ -127,16 +120,7 @@ export function MetricsView() {
 
   return (
     <>
-      <PageHeader
-        title="Overview"
-        meta="Throughput, quality and AI spend across all imports"
-        actions={
-          <ToggleGroup type="single" variant="outline" size="sm" value={range} onValueChange={(v) => v && setRange(v)}>
-            <ToggleGroupItem value="7">7 days</ToggleGroupItem>
-            <ToggleGroupItem value="14">14 days</ToggleGroupItem>
-          </ToggleGroup>
-        }
-      />
+      {header}
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <StatCard icon={PackageCheck} label="Products processed" value={formatNumber(rangeProducts)} hint={`${formatPercent(m.by.approved + m.by.ready, m.total)} built without review`} />
@@ -246,7 +230,7 @@ export function MetricsView() {
         <Panel title="Spend by model" icon={Cpu} bodyClassName="p-0">
           <ul className="divide-y">
             {m.models.map((md) => {
-              const share = md.cost / m.models.reduce((a, x) => a + x.cost, 0);
+              const share = md.cost / Math.max(1e-9, m.models.reduce((a, x) => a + x.cost, 0));
               return (
                 <li key={md.model} className="flex flex-col gap-2 px-4 py-3">
                   <div className="flex items-center justify-between text-sm">

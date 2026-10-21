@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { getImportRows } from "@/lib/data";
-import { useImports } from "@/lib/data/store";
+import { useImportRows, useImports, useImportsReady } from "@/lib/data/store";
 import { formatBytes, formatDateTime, formatNumber, formatUsd } from "@/lib/format";
 import type { ImportRow, RowStatus } from "@/lib/types";
 import { ImportStatusLabel, PageHeader, RowStatusLabel } from "./common";
 import { DataTable } from "./data-table";
 import { FilterTabs } from "./filter-tabs";
 import { ImportActions } from "./import-actions";
+import { ImportRowSheet } from "./import-row-sheet";
 import { ImportBar, statusDetail } from "./import-progress";
 import { Pagination } from "./pagination";
 import { UnmatchedPhotos } from "./unmatched-photos";
@@ -44,10 +44,12 @@ const statCards: { key: RowStatus; label: string; dot: string }[] = [
 export function ImportDetail({ id }: { id: string }) {
   const router = useRouter();
   const job = useImports().find((j) => j.id === id);
+  const ready = useImportsReady();
   const [filter, setFilter] = useState<Filter>("all");
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
+  const [openRow, setOpenRow] = useState<number | null>(null);
 
-  const rows = useMemo(() => (job ? getImportRows(job) : []), [job]);
+  const rows = useImportRows(id, Boolean(job && job.total_rows > 0));
   const columnFilters = useMemo(() => [{ id: "status", value: filter }], [filter]);
   const table = useReactTable({
     data: rows,
@@ -62,6 +64,7 @@ export function ImportDetail({ id }: { id: string }) {
   });
 
   if (!job) {
+    if (!ready) return null;
     return (
       <PageHeader
         title="Import not found"
@@ -140,8 +143,9 @@ export function ImportDetail({ id }: { id: string }) {
             caption="Rows in this import"
             minWidth={640}
             empty="No rows with this status."
-            onRowClick={rows.some((r) => r.product_id) ? (row) => row.original.product_id && router.push(`/products/${row.original.product_id}`) : undefined}
-            rowLabel={(row) => `Row ${row.original.row}`}
+            onRowClick={(row) => setOpenRow(row.original.row)}
+            isRowActive={(row) => row.original.row === openRow}
+            rowLabel={(row) => `Open row ${row.original.row}`}
           />
           <Pagination
             page={pagination.pageIndex}
@@ -150,6 +154,7 @@ export function ImportDetail({ id }: { id: string }) {
             onPage={(p) => table.setPageIndex(p)}
             onPageSize={(size) => table.setPagination({ pageIndex: 0, pageSize: size })}
           />
+          <ImportRowSheet importId={job.id} row={openRow} onClose={() => setOpenRow(null)} onOpenRow={setOpenRow} />
         </section>
       ) : null}
 
