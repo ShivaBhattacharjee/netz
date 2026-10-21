@@ -138,7 +138,8 @@ export function toShopifyCsv(products: Product[], vendor: string): string {
 }
 
 export function download(filename: string, content: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
+  const bom = type === "text/csv" ? "\uFEFF" : "";
+  const url = URL.createObjectURL(new Blob([bom + content], { type: `${type};charset=utf-8` }));
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
