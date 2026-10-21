@@ -77,6 +77,7 @@ async function persist(group: typeof importGroup.$inferSelect, input: GroupInput
     }
 
     for (const [position, v] of input.variants.entries()) {
+      if (manual.has(`variants.${v.sku}`)) continue;
       const set = { productId, options: v.options, priceCents: v.price_cents, currency: v.currency, weightGrams: v.weight_grams, position, skuDerived: v.sku_derived };
       await tx
         .insert(variant)

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { actions, useProduct } from "@/lib/data/store";
-import { formatDuration, formatMoney, formatNumber, formatUsd, formatWeight } from "@/lib/format";
+import { formatDuration, formatNumber, formatUsd } from "@/lib/format";
 import type { FieldTranslation, Product, TranslatableField, TranslatedLocale } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Confidence, PageHeader, ProductStatusLabel, StatusLabel } from "./common";
@@ -91,6 +91,81 @@ function SourcePanel({ product, highlight }: { product: Product; highlight: numb
         )}
       </div>
     </Card>
+  );
+}
+
+const CURRENCIES = ["EUR", "GBP", "USD", "CHF"];
+
+function toCents(value: string): number | null | undefined {
+  const v = value.trim().replace(/\s/g, "");
+  if (!v) return null;
+  const m = v.match(/^(\d+)(?:[.,](\d{1,2}))?$/);
+  if (!m) return undefined;
+  return Number(m[1]) * 100 + Number((m[2] ?? "0").padEnd(2, "0"));
+}
+
+function VariantRow({ productId, variant, manual }: { productId: string; variant: Product["variants"][number]; manual: boolean }) {
+  const [price, setPrice] = useState(variant.price_cents === null ? "" : (variant.price_cents / 100).toFixed(2));
+  const [weight, setWeight] = useState(variant.weight_grams === null ? "" : String(variant.weight_grams));
+  const [currency, setCurrency] = useState(variant.currency || "EUR");
+  const cents = toCents(price);
+  const grams = weight.trim() ? (/^\d+$/.test(weight.trim()) ? Number(weight) : undefined) : null;
+
+  function save(next: { currency?: string } = {}) {
+    if (cents === undefined || grams === undefined) return;
+    const cur = next.currency ?? currency;
+    if (cents === variant.price_cents && grams === variant.weight_grams && cur === variant.currency) return;
+    void actions.edit(productId, { kind: "variant", sku: variant.sku, price_cents: cents, currency: cur, weight_grams: grams });
+  }
+
+  return (
+    <tr className="border-b last:border-0">
+      <td className="px-3 py-2 font-mono text-xs">
+        {variant.sku}
+        {manual ? <span className="ml-2 font-sans text-[10px] text-muted-foreground">edited</span> : null}
+      </td>
+      <td className="px-3 py-2">{Object.values(variant.options).join(", ")}</td>
+      <td className="px-2 py-1.5">
+        <Input
+          aria-label={`Price for ${variant.sku}`}
+          inputMode="decimal"
+          placeholder="Missing"
+          className={cn("h-8 text-right tabular-nums", variant.price_cents === null && !price && "placeholder:text-warning")}
+          value={price}
+          aria-invalid={cents === undefined}
+          onChange={(e) => setPrice(e.target.value)}
+          onBlur={() => save()}
+        />
+      </td>
+      <td className="px-2 py-1.5">
+        <select
+          aria-label={`Currency for ${variant.sku}`}
+          className="h-8 w-full rounded-md border bg-transparent px-2 text-sm"
+          value={currency}
+          onChange={(e) => {
+            setCurrency(e.target.value);
+            save({ currency: e.target.value });
+          }}
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td className="px-2 py-1.5">
+        <Input
+          aria-label={`Weight in grams for ${variant.sku}`}
+          inputMode="numeric"
+          className="h-8 text-right tabular-nums"
+          value={weight}
+          aria-invalid={grams === undefined}
+          onChange={(e) => setWeight(e.target.value)}
+          onBlur={() => save()}
+        />
+      </td>
+    </tr>
   );
 }
 
@@ -252,13 +327,30 @@ function ResultPanel({ product, onClaim }: { product: Product; onClaim: (row: nu
               <tbody>
                 <tr className="border-b">
                   <th scope="row" className="w-28 px-3 py-2 text-left text-xs font-normal text-muted-foreground">Tags</th>
-                  <td className="px-3 py-2">{product.tags.join(", ")}</td>
+                  <td className="px-2 py-1.5">
+                    <Input
+                      aria-label="Tags, comma separated"
+                      className="h-8"
+                      defaultValue={product.tags.join(", ")}
+                      onBlur={(e) => {
+                        const tags = e.target.value.split(",").map((t) => t.trim()).filter(Boolean);
+                        if (tags.join(",") !== product.tags.join(",")) void actions.edit(product.id, { kind: "tags", tags });
+                      }}
+                    />
+                  </td>
                   <td className="px-3 py-2 text-right">{c.tags !== undefined ? <Confidence score={c.tags} /> : null}</td>
                 </tr>
                 {Object.entries(product.attributes).map(([k, v]) => (
                   <tr key={k} className="border-b last:border-0">
                     <th scope="row" className="px-3 py-2 text-left text-xs font-normal capitalize text-muted-foreground">{k}</th>
-                    <td className="px-3 py-2">{v}</td>
+                    <td className="px-2 py-1.5">
+                      <Input
+                        aria-label={k}
+                        className="h-8"
+                        defaultValue={v}
+                        onBlur={(e) => e.target.value !== v && void actions.edit(product.id, { kind: "attribute", key: k, value: e.target.value })}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right">{c[`attributes.${k}`] !== undefined ? <Confidence score={c[`attributes.${k}`]} /> : null}</td>
                   </tr>
                 ))}
@@ -278,20 +370,14 @@ function ResultPanel({ product, onClaim }: { product: Product; onClaim: (row: nu
                 <tr className="border-b">
                   <th scope="col" className="h-8 px-3 text-left font-medium">SKU</th>
                   <th scope="col" className="h-8 px-3 text-left font-medium">Options</th>
-                  <th scope="col" className="h-8 px-3 text-right font-medium">Price</th>
-                  <th scope="col" className="h-8 px-3 text-right font-medium">Weight</th>
+                  <th scope="col" className="h-8 w-28 px-3 text-right font-medium">Price</th>
+                  <th scope="col" className="h-8 w-24 px-3 font-medium">Currency</th>
+                  <th scope="col" className="h-8 w-28 px-3 text-right font-medium">Weight (g)</th>
                 </tr>
               </thead>
               <tbody>
                 {product.variants.map((v) => (
-                  <tr key={v.sku} className="border-b last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{v.sku}</td>
-                    <td className="px-3 py-2">{Object.values(v.options).join(", ")}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {v.price_cents === null ? <span className="text-warning">Missing</span> : formatMoney(v.price_cents, v.currency)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{formatWeight(v.weight_grams)}</td>
-                  </tr>
+                  <VariantRow key={v.sku} productId={product.id} variant={v} manual={isManual(`variants.${v.sku}`)} />
                 ))}
               </tbody>
             </table>
@@ -402,7 +488,7 @@ export function ProductReview({ id }: { id: string }) {
             <>
               <RerunDialog ids={[product.id]} />
               <SendBack product={product} />
-              <Button disabled={product.status === "approved"} onClick={() => actions.approve([product.id])}>
+              <Button variant="success" disabled={product.status === "approved"} onClick={() => void actions.approve([product.id])}>
                 <Check data-icon="inline-start" />
                 {product.status === "approved" ? "Approved" : "Approve"}
               </Button>

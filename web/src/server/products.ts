@@ -184,6 +184,9 @@ export async function sendBack(storeId: string, id: string, note: string) {
 
 export type ProductEdit =
   | { kind: "field"; field: "title" | "description_html" | "category"; value: string }
+  | { kind: "variant"; sku: string; price_cents: number | null; currency: string; weight_grams: number | null }
+  | { kind: "tags"; tags: string[] }
+  | { kind: "attribute"; key: string; value: string }
   | { kind: "translation"; locale: TranslatedLocale; field: TranslatableField; text: string }
   | { kind: "seo"; locale: Locale; field: keyof SeoFields; value: string };
 
@@ -199,6 +202,31 @@ export async function editProduct(storeId: string, id: string, edit: ProductEdit
       .where(eq(product.id, id))
       .returning();
     if (edit.field !== "category") await retranslate(saved);
+    return;
+  }
+
+  if (edit.kind === "variant") {
+    const updated = await db
+      .update(variant)
+      .set({ priceCents: edit.price_cents, currency: edit.currency, weightGrams: edit.weight_grams })
+      .where(and(eq(variant.productId, id), eq(variant.sku, edit.sku)))
+      .returning({ id: variant.id });
+    if (updated.length === 0) throw new ProductInputError(`Variant ${edit.sku} not found`);
+    await db.update(product).set({ manualFields: withManual(row, `variants.${edit.sku}`) }).where(eq(product.id, id));
+    return;
+  }
+
+  if (edit.kind === "tags") {
+    const tags = [...new Set(edit.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))];
+    await db.update(product).set({ tags, manualFields: withManual(row, "tags") }).where(eq(product.id, id));
+    return;
+  }
+
+  if (edit.kind === "attribute") {
+    const attributes = { ...row.attributes };
+    if (edit.value.trim()) attributes[edit.key] = edit.value.trim();
+    else delete attributes[edit.key];
+    await db.update(product).set({ attributes, manualFields: withManual(row, "attributes") }).where(eq(product.id, id));
     return;
   }
 
