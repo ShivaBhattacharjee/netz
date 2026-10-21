@@ -49,7 +49,7 @@ pnpm dev                    # app on http://localhost:3000
 pnpm worker:dev             # in a second terminal: runs the import queues
 ```
 
-Both the app and the worker refuse to start if the environment is invalid or the database is missing migrations, and tell you which.
+All server configuration goes through one zod schema in `src/server/env.ts`. Both the app and the worker refuse to start if the environment is invalid or the database is missing migrations, and list every problem.
 
 Without `ANTHROPIC_API_KEY` the whole pipeline runs in mock mode: imports, review and storefront all work, and AI output is a deterministic stand-in.
 
@@ -66,7 +66,8 @@ Without `ANTHROPIC_API_KEY` the whole pipeline runs in mock mode: imports, revie
 | `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_MODEL_TRANSLATE` | no | default `claude-haiku-5-5`; checked against the models API when the worker starts |
 | `AI_BUDGET_MULTIPLIER`, `AI_BUDGET_MIN_USD` | no | import budget is the estimate times the multiplier (default 3), at least the minimum (default $1) |
 | `AI_RPM` | no | cap on AI requests per minute per worker |
-| `STORAGE_DIR` | no | upload storage, default `.data/uploads` |
+| `STORAGE_DIR` | no | upload and photo storage on disk, default `.data/uploads` |
+| `WEBHOOKS_ALLOW_PRIVATE` | no | `true` lets webhooks reach localhost and private IPs; development only, rejected in production |
 | `DB_POOL_MAX` | no | Postgres pool size per process, default 10 |
 | `WORKER_QUEUES`, `*_CONCURRENCY` | no | split queues across worker processes and tune concurrency |
 
@@ -77,10 +78,20 @@ Without `ANTHROPIC_API_KEY` the whole pipeline runs in mock mode: imports, revie
 | `pnpm dev` | Next.js dev server |
 | `pnpm worker:dev` / `pnpm worker` | worker with or without file watching |
 | `pnpm build` / `pnpm start` | production build and server |
+| `pnpm start:render` | applies migrations, then runs `next start` and the worker together; either one exiting stops both |
 | `pnpm db:up` | start Postgres and Redis in Docker |
 | `pnpm db:generate` / `pnpm db:migrate` | create and apply Drizzle migrations |
 | `pnpm db:studio` | browse the database |
 | `pnpm lint` | ESLint |
+
+## Deploy on Render
+
+One web service runs everything:
+
+- **Build command:** `pnpm install --frozen-lockfile && pnpm build`
+- **Start command:** `pnpm start:render`
+- **Environment:** the variables above, with `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` set to the Render URL, a hosted Postgres (Neon, Render Postgres) and a hosted Redis (Upstash, Render Key Value). Add `<url>/api/auth/callback/google` to the Google OAuth redirect URIs.
+- **Disk:** uploads and photos are stored on the local filesystem, not S3. Attach a Render persistent disk and set `STORAGE_DIR` to a folder on it (for example `/var/data/uploads`); without one, uploaded files are lost on every deploy or restart. A persistent disk pins the service to one instance.
 
 ## Dashboard
 
