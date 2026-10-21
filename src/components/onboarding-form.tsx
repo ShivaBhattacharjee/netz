@@ -6,9 +6,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createStore, type CreateStoreState } from "@/lib/stores/actions";
-import { CURRENCIES } from "@/lib/stores/schema";
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
@@ -76,24 +74,6 @@ export function OnboardingForm({ firstStore, userName }: { firstStore: boolean; 
               aria-describedby={errors.domain ? "domain-error" : undefined}
             />
             <FieldError id="domain-error" message={errors.domain} />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="currency">Default currency</Label>
-            <Select name="currency" defaultValue={state.values?.currency || "EUR"}>
-              <SelectTrigger id="currency" className="w-full" aria-invalid={!!errors.currency}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">Used for prices in supplier sheets that have no currency symbol.</p>
-            <FieldError id="currency-error" message={errors.currency} />
           </div>
 
           {state.error ? (

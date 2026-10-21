@@ -16,8 +16,8 @@ const MAX_SLUG_ATTEMPTS = 5;
 
 export interface CreateStoreState {
   error?: string;
-  fieldErrors?: Partial<Record<"name" | "domain" | "currency", string>>;
-  values?: { name: string; domain: string; currency: string };
+  fieldErrors?: Partial<Record<"name" | "domain", string>>;
+  values?: { name: string; domain: string };
 }
 
 function slugify(name: string) {
@@ -51,7 +51,6 @@ export async function createStore(_prev: CreateStoreState, formData: FormData): 
   const values = {
     name: String(formData.get("name") ?? ""),
     domain: String(formData.get("domain") ?? ""),
-    currency: String(formData.get("currency") ?? ""),
   };
 
   const parsed = createStoreSchema.safeParse(values);
@@ -90,7 +89,6 @@ export async function createStore(_prev: CreateStoreState, formData: FormData): 
           name: parsed.data.name,
           slug,
           domain: parsed.data.domain,
-          defaultCurrency: parsed.data.currency,
         });
         await tx.insert(storeMember).values({ storeId: id, userId: user.id, role: "owner" });
       });

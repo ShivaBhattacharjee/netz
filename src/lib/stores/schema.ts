@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const CURRENCIES = ["EUR", "GBP", "USD", "CHF"] as const;
-
 const hostname = /^(?=.{1,253}$)(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/;
 
 function toHostname(value: string) {
@@ -25,7 +23,6 @@ export const createStoreSchema = z.object({
     .max(253)
     .transform(toHostname)
     .refine((v) => v === null || hostname.test(v), "Enter a domain like mystore.com"),
-  currency: z.enum(CURRENCIES, { message: "Pick a currency" }),
 });
 
 export type CreateStoreInput = z.input<typeof createStoreSchema>;
