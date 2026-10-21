@@ -1,8 +1,10 @@
 # CatalogForge
 
+[![CI](https://github.com/ShivaBhattacharjee/netz/actions/workflows/ci.yml/badge.svg)](https://github.com/ShivaBhattacharjee/netz/actions/workflows/ci.yml)
+
 Turn a messy supplier sheet and a folder of photos into a clean product catalog in English, German and French, with a review step before anything goes live.
 
-Upload a CSV, XLSX or ZIP. CatalogForge cleans prices, units and encodings, groups rows into products and variants, matches photos, has Claude write each listing with a cited source for every claim, translates it, and puts anything it is unsure about in a review queue. Approved products appear on a storefront preview that picks the language from the visitor's country.
+Upload a CSV, XLSX or ZIP. CatalogForge cleans prices, units and encodings, groups rows into products and variants, matches photos, has Claude write each listing with a cited source for every claim, translates it, and puts anything it is unsure about in a review queue. Approved products appear on a public storefront at `/shop/<store>` that picks the language from the visitor's country.
 
 ## Tech stack
 
@@ -30,9 +32,9 @@ Browser ──► Next.js API routes ──► Postgres (source of truth)
 1. **Upload**: files stream to `STORAGE_DIR`, checked by magic bytes and size while streaming.
 2. **Parse**: header detection (EN/DE/FR), encoding repair, prices to integer cents, units to cm and grams, colour typo fixes, grouping into products and variants, duplicate and conflict detection, photo matching.
 3. **Route**: clean groups go to the fast model, messy groups and groups with photos to the strong model.
-4. **Build**: Claude returns structured JSON with per-field confidence and a source for every claim. Unsupported claims are removed, prices and SKUs never come from the model, and low confidence sends the product to review.
-5. **Translate**: title, description, SEO and attribute values go to German and French, one call per language, with brand names, placeholders and measurements protected. Manual fixes are never overwritten.
-6. **Review and publish**: approve products in bulk or one by one. Approved products show on `/store`, 24 per page.
+4. **Build**: Claude returns structured JSON with per-field confidence and a quoted source cell for every claim and attribute. Code checks each quote against the sheet and removes what it cannot find, prices and SKUs never come from the model, and low confidence sends the product to review. System prompts are marked for prompt caching. Anthropic caches only prompts above a per-model minimum length, which the build prompt (about 1,900 tokens) passes on Sonnet; cost tracking reads the cached-token counts from each response, so spend is exact either way.
+5. **Translate**: title, description, SEO and attribute values go to German and French in one call, with brand names, placeholders and measurements protected. Manual fixes are never overwritten.
+6. **Review and publish**: approve products in bulk or one by one. Approved products show on the public storefront at `/shop/<store>`, 24 per page, with no sign-in. A re-import that changes an approved product without raising a review reason keeps it listed.
 
 Every stage writes its result before the next one runs, jobs are idempotent, and a reconciler re-queues unfinished work, so restarts and re-uploads never repeat paid AI calls. Each import gets an AI budget and pauses when it is reached. [EDGE-CASES.md](EDGE-CASES.md) lists every failure case, how it is handled and whether `pnpm test` covers it; [SCOPE.md](SCOPE.md) has the scope and architecture notes.
 
@@ -87,7 +89,8 @@ Without `ANTHROPIC_API_KEY` the whole pipeline runs in mock mode: imports, revie
 | `pnpm db:generate` / `pnpm db:migrate` | create and apply Drizzle migrations |
 | `pnpm db:studio` | browse the database |
 | `pnpm lint` | ESLint |
-| `pnpm test` | Vitest suite in `tests/`: price parsing, cleaning, grouping, photo matching, file safety, claim checks, translation masking, exports, and 100% cleaning accuracy on every eval set; no database or AI needed |
+| `pnpm test` | Vitest suite in `tests/`: price parsing, cleaning, grouping, photo matching, file safety, claim and attribute checks, translation masking, AI cost, exports, and 100% cleaning accuracy on every eval set; no database or AI needed |
+| `pnpm test:integration` | imports the 464-product medium sheet through a real worker, Postgres and Redis against a fake Anthropic API, kills the worker mid-import with `SIGKILL`, restarts it, and checks every group finished once with no duplicate products and at most one repeated AI call per job that was in flight; then re-uploads the sheet and checks it makes no AI calls. Creates and drops a `netz_it` database and uses Redis database 9 (`IT_DATABASE_URL`, `IT_REDIS_URL` to override) |
 
 ## Deploy on Render
 
@@ -105,7 +108,7 @@ One web service runs everything:
 | `/imports` | upload, live progress, retry, budget and pause states |
 | `/products` | catalog table, filters, bulk approve, re-run, delete, CSV / JSON / Shopify export |
 | `/products/[id]` | source rows beside the AI result, edits, claims, variants, translations, SEO |
-| `/storefront` | listed products, add or remove from the storefront, preview at `/store` |
+| `/storefront` | listed products, add or remove from the storefront, preview and public link to `/shop/<store>` |
 | `/metrics` | throughput, review rate, AI spend per model and import |
 | `/evaluations` | accuracy per field against labelled eval sets |
 | `/experiments` | A/B runs of models and prompts on the same rows |

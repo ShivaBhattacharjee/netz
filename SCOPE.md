@@ -79,8 +79,8 @@ Next.js 15 App Router, TypeScript, Tailwind v4, shadcn/ui (Radix) with Geist and
 | `/products` | Paginated, sortable, searchable table with status/confidence filters, bulk approve, CSV/JSON export |
 | `/products/[id]` | Source rows and photos beside the AI result, editable fields, claims with sources, variants, translations |
 | `/metrics` | Outcome rates, model usage, cost over time, speed, translation coverage |
-| `/store` | Collection page, language by country switcher |
-| `/store/[handle]` | Product page |
+| `/shop/[store]` | Public collection page, no sign-in, language by country switcher; `/store` redirects the merchant here with a preview banner |
+| `/shop/[store]/[handle]` | Public product page |
 | `/evaluations`, `/experiments` | Accuracy per field, prompt and model A/B tests |
 | `/queue` | Queues and workers |
 | `/settings/webhooks`, `/settings/api` | Webhooks, API keys and docs |

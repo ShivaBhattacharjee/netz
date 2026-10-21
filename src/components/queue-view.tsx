@@ -35,7 +35,7 @@ const descriptions: Record<string, string> = {
   parse: "Reads the sheet, cleans and groups rows, matches photos",
   "ai.cheap": "Builds clean product groups with the fast model",
   "ai.strong": "Builds messy groups and photo-heavy products with the stronger model",
-  translate: "Translates titles, descriptions and SEO fields into German and French",
+  translate: "Translates titles, descriptions, SEO fields and attributes into German and French in one call",
   webhooks: "Delivers signed webhook events to your endpoints",
   eval: "Scores the pipeline against labelled eval sets",
 };
