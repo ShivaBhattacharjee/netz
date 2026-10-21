@@ -48,7 +48,7 @@ Redis + BullMQ ──► Worker process (`pnpm worker`, src/worker)
 Storefront routes ──► Postgres read model (published + translated only), cached
 ```
 
-- Models (env): `AI_MODEL_FAST` for clean groups, `AI_MODEL_STRONG` for messy groups and photos, `AI_MODEL_TRANSLATE` for translation; all default to `claude-haiku-5-5`. `AI_MODE=mock` runs the whole pipeline without a key.
+- Models (env): `AI_MODEL_FAST` for clean groups, `AI_MODEL_STRONG` for messy groups and photos, `AI_MODEL_TRANSLATE` for translation; the strong model defaults to `claude-sonnet-5-5`, the other two to `claude-haiku-5-5`. `AI_MODE=mock` runs the whole pipeline without a key.
 - Worker runs as a separate process so import load never shares the storefront's event loop. `WORKER_QUEUES` and `*_CONCURRENCY` split queues across processes.
 - Every stage writes its result before the next stage runs; jobs are keyed by `(import_id, group_id, stage)` and successful model output is cached in `ai_result` before the product write, so a retry or restart never repeats paid work.
 - A reconciler (on start and every 5 minutes) re-enqueues anything Postgres says is unfinished; Postgres is the source of truth, Redis is the delivery mechanism.

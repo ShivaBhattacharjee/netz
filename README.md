@@ -12,7 +12,7 @@ Upload a CSV, XLSX or ZIP. CatalogForge cleans prices, units and encodings, grou
 | UI | Tailwind CSS v4, shadcn/ui on Radix, TanStack Table, Recharts, Motion, Sonner, Lucide icons |
 | Database | Postgres 17 with [Drizzle ORM](https://orm.drizzle.team) and drizzle-kit migrations |
 | Queue | Redis 7.4 and [BullMQ](https://docs.bullmq.io), run by a separate worker process |
-| AI | [Anthropic SDK](https://docs.claude.com) with Claude Haiku 5.5 (imports, translation) and Claude Sonnet 5.5 (re-runs, experiments), structured JSON output |
+| AI | [Anthropic SDK](https://docs.claude.com) with Claude Haiku 5.5 (clean rows, translation) and Claude Sonnet 5.5 (messy rows, photos, re-runs), structured JSON output |
 | Auth | [Better Auth](https://better-auth.com) with Google sign-in, multi-store memberships, API keys |
 | Files | papaparse and SheetJS for sheets, yauzl for ZIPs, sharp for photos, sanitize-html for descriptions |
 | Validation | zod on every API route, server action, env and model output |
@@ -31,10 +31,14 @@ Browser ──► Next.js API routes ──► Postgres (source of truth)
 2. **Parse**: header detection (EN/DE/FR), encoding repair, prices to integer cents, units to cm and grams, colour typo fixes, grouping into products and variants, duplicate and conflict detection, photo matching.
 3. **Route**: clean groups go to the fast model, messy groups and groups with photos to the strong model.
 4. **Build**: Claude returns structured JSON with per-field confidence and a source for every claim. Unsupported claims are removed, prices and SKUs never come from the model, and low confidence sends the product to review.
-5. **Translate**: each field goes to German and French separately, with brand names, placeholders and measurements protected. Manual fixes are never overwritten.
-6. **Review and publish**: approve products in bulk or one by one. Approved products show on `/store`.
+5. **Translate**: title, description, SEO and attribute values go to German and French, one call per language, with brand names, placeholders and measurements protected. Manual fixes are never overwritten.
+6. **Review and publish**: approve products in bulk or one by one. Approved products show on `/store`, 24 per page.
 
-Every stage writes its result before the next one runs, jobs are idempotent, and a reconciler re-queues unfinished work, so restarts and re-uploads never repeat paid AI calls. Each import gets an AI budget and pauses when it is reached. [EDGE-CASES.md](EDGE-CASES.md) lists every failure case and how it is handled; [SCOPE.md](SCOPE.md) has the scope and architecture notes.
+Every stage writes its result before the next one runs, jobs are idempotent, and a reconciler re-queues unfinished work, so restarts and re-uploads never repeat paid AI calls. Each import gets an AI budget and pauses when it is reached. [EDGE-CASES.md](EDGE-CASES.md) lists every failure case and how it is handled, [TEST-CASES.md](TEST-CASES.md) has a manual test for each one with recorded results, and [SCOPE.md](SCOPE.md) has the scope and architecture notes.
+
+## Test data
+
+`evals/` holds the sample sheets and photos used for testing and for the `/evaluations` page: `small`, `medium` and `large` labelled sets, the `final` 1 / 100 / 1,000 / 10,000-row sets, and `edge` files for the failure cases (bad encodings, formula injection, a renamed PDF, a ZIP bomb, too many rows). Each set has a README and `labels.json` with the expected products. Photo folders for the bigger sets are not committed; their `photos.zip` is. `scripts/generate_evals.py` recreates everything deterministically (`pip install pillow openpyxl`). `scripts/fake-anthropic.py` stands in for the Anthropic API and fails on purpose, for the AI-failure test cases.
 
 ## Getting started
 
@@ -63,7 +67,7 @@ Without `ANTHROPIC_API_KEY` the whole pipeline runs in mock mode: imports, revie
 | `BETTER_AUTH_URL` | yes | public URL of the app |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | for sign-in | redirect URI `<BETTER_AUTH_URL>/api/auth/callback/google` |
 | `ANTHROPIC_API_KEY` | for real AI | unset means `AI_MODE=mock` |
-| `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_MODEL_TRANSLATE` | no | default `claude-haiku-5-5`; checked against the models API when the worker starts |
+| `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_MODEL_TRANSLATE` | no | defaults `claude-haiku-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`; checked against the models API when the worker starts |
 | `AI_BUDGET_MULTIPLIER`, `AI_BUDGET_MIN_USD` | no | import budget is the estimate times the multiplier (default 3), at least the minimum (default $1) |
 | `AI_RPM` | no | cap on AI requests per minute per worker |
 | `STORAGE_DIR` | no | upload and photo storage on disk, default `.data/uploads` |
@@ -147,4 +151,6 @@ src/
   worker/         worker entry point
 prompts/          versioned prompts (build-product, translate, repair-json)
 drizzle/          SQL migrations
+evals/            sample sheets, photos and labels for testing
+scripts/          eval generator, fake Anthropic API for failure tests
 ```
