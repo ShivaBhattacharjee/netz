@@ -6,6 +6,7 @@ export type AiErrorKind =
   | "unavailable"
   | "timeout"
   | "auth"
+  | "billing"
   | "bad_request"
   | "blocked"
   | "truncated"
@@ -75,6 +76,9 @@ export function classify(error: unknown): AiError {
   if (error instanceof AiError) return error;
   if (error instanceof ApiError) {
     const message = error.message ?? "";
+    if (error.status === 402 || /prepayment credits|billing/i.test(message)) {
+      return new AiError("billing", "Gemini credits are used up or billing is not set up for this key's project");
+    }
     if (error.status === 429) {
       const daily = /PerDay|per day|daily/i.test(message);
       return new AiError(daily ? "quota_daily" : "rate_limit", daily ? "Daily AI quota reached" : "AI rate limit reached", retryDelayMs(message));

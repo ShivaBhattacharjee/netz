@@ -5,6 +5,11 @@ interface Rate {
 }
 
 const USD_PER_MILLION: Record<string, Rate[]> = {
+  "gemini-flash-lite-latest": [{ input: 0.3, output: 2.5 }],
+  "gemini-flash-latest": [
+    { input: 0.75, output: 3.75 },
+    { input: 1.5, output: 7.5, from: "2027-01-01" },
+  ],
   "gemini-3.1-flash-lite": [{ input: 0.25, output: 1.5 }],
   "gemini-3.5-flash-lite": [{ input: 0.3, output: 2.5 }],
   "gemini-3.6-flash": [

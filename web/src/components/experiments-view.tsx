@@ -38,8 +38,8 @@ function NewExperiment({
   const [name, setName] = useState("");
   const [set, setSet] = useState(options.sets[0]?.name ?? "");
   const [limit, setLimit] = useState("25");
-  const [a, setA] = useState<Variant>({ model: "gemini-3.1-flash-lite", prompt: firstPrompt });
-  const [b, setB] = useState<Variant>({ model: "gemini-3.8-flash", prompt: firstPrompt });
+  const [a, setA] = useState<Variant>({ model: "gemini-flash-lite-latest", prompt: firstPrompt });
+  const [b, setB] = useState<Variant>({ model: "gemini-flash-latest", prompt: firstPrompt });
   const [busy, setBusy] = useState(false);
   const same = a.model === b.model && a.prompt === b.prompt;
 

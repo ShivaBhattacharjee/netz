@@ -43,6 +43,7 @@ export function pauseFor(error: AiError): { ms: number; reason: string } | null 
     case "quota_daily":
       return { ms: error.retryAfterMs ?? 60 * 60_000, reason: "Daily AI quota reached" };
     case "auth":
+    case "billing":
       return { ms: 5 * 60_000, reason: error.message };
     default:
       return null;
