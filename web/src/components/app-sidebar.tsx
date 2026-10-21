@@ -55,12 +55,12 @@ interface Leaf {
 
 function TreeLinks({ items, pathname }: { items: Leaf[]; pathname: string }) {
   return (
-    <ul className="relative ml-[15px] flex flex-col py-0.5 group-data-[collapsible=icon]:hidden">
+    <ul className="relative ml-[15px] flex flex-col pt-0.5 group-data-[collapsible=icon]:hidden">
       {items.map((item, i) => {
         const active = pathname === item.href;
         const last = i === items.length - 1;
         return (
-          <li key={item.href} className="relative pl-4">
+          <li key={item.href} className="relative py-0.5 pl-4">
             <span aria-hidden className="absolute top-0 left-0 h-1/2 w-3 rounded-bl-md border-b border-l border-sidebar-foreground/20" />
             {!last ? <span aria-hidden className="absolute top-0 bottom-0 left-0 border-l border-sidebar-foreground/20" /> : null}
             <Link
