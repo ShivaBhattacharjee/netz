@@ -8,6 +8,7 @@ import { mockBuild } from "../ai/mock";
 import { costMicros } from "../ai/pricing";
 import { env } from "../env";
 import { scoreBuild, scoreCleaning } from "../evals/score";
+import { resolvePrompt } from "../evals/prompts";
 import { loadEvalSet } from "../evals/sets";
 import { buildGroups, cleanRows, sheetDecimalHint } from "../pipeline/group";
 import { detectHeader } from "../pipeline/headers";
@@ -32,6 +33,7 @@ export async function runEval(job: Job<EvalJob>) {
   try {
     const config = env();
     const { sheet, labels } = loadEvalSet(run.set);
+    const prompt = await resolvePrompt(run.storeId, run.prompt);
     const parsed = parseSheet(sheet, "csv");
     const header = detectHeader(parsed.rows);
     if (!header) throw new Error("Eval sheet has no header row");
@@ -68,7 +70,7 @@ export async function runEval(job: Job<EvalJob>) {
       } else {
         for (let waits = 0; ; waits++) {
           try {
-            const result = await generateBuild(group, model, { withPhotos: false, maxOutputTokens: 4096, prompt: run.prompt });
+            const result = await generateBuild(group, model, { withPhotos: false, maxOutputTokens: 4096, prompt });
             calls.push(...result.calls.map((c) => ({ ...c, task: "eval" as const })));
             latencies.push(result.calls.reduce((a, c) => a + c.latencyMs, 0));
             built = finalizeBuild(group, result.output);

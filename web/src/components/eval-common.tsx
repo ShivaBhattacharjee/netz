@@ -1,8 +1,14 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/data/api";
 import { formatNumber } from "@/lib/format";
 import type { EvalOptions, EvalRun } from "@/lib/types";
@@ -112,33 +118,190 @@ export function modelOptions(options: EvalOptions) {
 }
 
 export function promptOptions(options: EvalOptions) {
-  return options.prompts.map((p) => ({ value: p.name, label: `${p.name} (${p.version})` }));
+  return options.prompts.map((p) => ({ value: p.name, label: p.custom ? `${p.label} (custom)` : `${p.label} (${p.version})` }));
 }
 
-export function PromptSource({ name }: { name: string }) {
+interface PromptDetail {
+  name: string;
+  source: string;
+  version: string;
+  system: string;
+  user: string;
+  custom: boolean;
+}
+
+function fetchPrompt(name: string) {
+  return api<PromptDetail>(`/api/prompts/${encodeURIComponent(name)}`);
+}
+
+export function PromptSource({ name, onDeleted }: { name: string; onDeleted?: () => void }) {
   const [open, setOpen] = useState(false);
-  const [prompt, setPrompt] = useState<{ file: string; version: string; system: string; user: string } | null>(null);
+  const [prompt, setPrompt] = useState<PromptDetail | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || prompt?.file === `prompts/${name}.md`) return;
-    api<{ file: string; version: string; system: string; user: string }>(`/api/prompts/${name}`)
-      .then(setPrompt)
+    if (!name || loadedFor === name) return;
+    fetchPrompt(name)
+      .then((p) => {
+        setPrompt(p);
+        setLoadedFor(name);
+      })
       .catch(() => setPrompt(null));
-  }, [open, name, prompt?.file]);
+  }, [name, loadedFor]);
+
+  const current = loadedFor === name ? prompt : null;
 
   return (
     <div className="flex flex-col gap-2 text-xs text-muted-foreground">
-      <p>
-        Loaded from <span className="font-mono text-foreground">web/prompts/{name}.md</span>. The version in its front matter is saved with every result.{" "}
+      <p className="flex flex-wrap items-center gap-x-1">
+        <span>{current?.custom ? "Saved in this store" : "Loaded from"}</span>
+        {current && !current.custom ? <span className="font-mono text-foreground">{current.source}</span> : null}
+        <span>· version {current?.version ?? "…"} ·</span>
         <button type="button" className="plain-button underline underline-offset-4 hover:text-foreground" onClick={() => setOpen((o) => !o)}>
           {open ? "Hide prompt" : "Show prompt"}
         </button>
+        {current?.custom ? (
+          <>
+            <span>·</span>
+            <button
+              type="button"
+              className="plain-button text-error underline underline-offset-4"
+              onClick={() =>
+                void api(`/api/prompts/${encodeURIComponent(name)}`, { method: "DELETE" })
+                  .then(() => {
+                    toast.success("Prompt deleted");
+                    onDeleted?.();
+                  })
+                  .catch((e: Error) => toast.error(e.message))
+              }
+            >
+              Delete
+            </button>
+          </>
+        ) : null}
       </p>
       {open ? (
         <pre className="max-h-72 overflow-auto whitespace-pre-wrap border bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
-          {prompt ? `# System\n${prompt.system}\n\n# User\n${prompt.user}` : "Loading…"}
+          {current ? `# System\n${current.system}\n\n# User\n${current.user}` : "Loading…"}
         </pre>
       ) : null}
+    </div>
+  );
+}
+
+export function NewPromptSheet({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated: (name: string) => void }) {
+  const [name, setName] = useState("");
+  const [system, setSystem] = useState("");
+  const [user, setUser] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || system) return;
+    fetchPrompt("build-product")
+      .then((p) => {
+        setSystem(p.system);
+        setUser(p.user);
+      })
+      .catch(() => undefined);
+  }, [open, system]);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await api<{ name: string }>("/api/prompts", { method: "POST", json: { name, system, user } });
+      toast.success("Prompt saved");
+      onOpenChange(false);
+      setName("");
+      setSystem("");
+      setUser("");
+      onCreated(created.name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save the prompt");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
+        <SheetHeader className="border-b p-5">
+          <SheetTitle className="text-lg">New prompt</SheetTitle>
+          <SheetDescription>
+            Starts from the built-in prompt. Keep {"{{input}}"} in the user message; the category list is added automatically if you remove {"{{taxonomy}}"}. Output is still
+            schema-checked and every claim is verified against the source rows.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="prompt-name">Name</Label>
+            <Input id="prompt-name" placeholder="Stricter claims" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="prompt-system">System prompt</Label>
+            <Textarea id="prompt-system" rows={16} className="field-sizing-fixed font-mono text-xs" value={system} onChange={(e) => setSystem(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="prompt-user">User message</Label>
+            <Textarea id="prompt-user" rows={5} className="field-sizing-fixed font-mono text-xs" value={user} onChange={(e) => setUser(e.target.value)} />
+          </div>
+          {error ? <p className="text-sm text-error">{error}</p> : null}
+        </div>
+        <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button disabled={!name.trim() || !system.trim() || !user.includes("{{input}}") || busy} onClick={() => void save()}>
+            {busy ? "Saving" : "Save prompt"}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export function PromptPicker({
+  id,
+  options,
+  value,
+  onChange,
+  onPromptsChanged,
+}: {
+  id: string;
+  options: EvalOptions;
+  value: string;
+  onChange: (v: string) => void;
+  onPromptsChanged: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <OptionSelect id={id} label="Prompt" value={value} onChange={onChange} options={promptOptions(options)} />
+        </div>
+        <Button variant="outline" onClick={() => setCreating(true)}>
+          <Plus data-icon="inline-start" />
+          New prompt
+        </Button>
+      </div>
+      <PromptSource
+        name={value}
+        onDeleted={() => {
+          onChange(options.prompts[0]?.name ?? "build-product");
+          onPromptsChanged();
+        }}
+      />
+      <NewPromptSheet
+        open={creating}
+        onOpenChange={setCreating}
+        onCreated={(name) => {
+          onPromptsChanged();
+          onChange(name);
+        }}
+      />
     </div>
   );
 }

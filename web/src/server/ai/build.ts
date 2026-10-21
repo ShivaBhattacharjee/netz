@@ -6,7 +6,7 @@ import { htmlToText, sanitizeHtml } from "../pipeline/text";
 import { TAXONOMY, isCategory } from "../pipeline/taxonomy";
 import { storage } from "../storage";
 import { AiError, type Usage, generateJson, toResponseSchema, usageOf } from "./gemini";
-import { loadPrompt, render } from "./prompts";
+import { type Prompt, loadPrompt, render } from "./prompts";
 import { unsupportedTerms, verifyClaims } from "./verify";
 
 export const LOW_CONFIDENCE = 70;
@@ -102,16 +102,17 @@ function parseOutput(text: string) {
 export async function generateBuild(
   group: GroupInput,
   model: string,
-  opts: { withPhotos: boolean; maxOutputTokens: number; note?: string; prompt?: string },
+  opts: { withPhotos: boolean; maxOutputTokens: number; note?: string; prompt?: Prompt },
 ) {
-  const prompt = loadPrompt(opts.prompt ?? "build-product");
+  const prompt = opts.prompt ?? loadPrompt("build-product");
   const calls: AiCallRecord[] = [];
   const record = (task: AiCallRecord["task"], version: string, usage: Usage, latencyMs: number, ok: boolean, errorCode: string | null) =>
     calls.push({ model, promptVersion: version, task, usage, latencyMs, ok, errorCode });
 
   const parts: Part[] = [{ text: render(prompt.user, { input: promptInput(group, opts.note) }) }];
   if (opts.withPhotos) parts.push(...(await photoParts(group)));
-  const system = render(prompt.system, { taxonomy: TAXONOMY.map((c) => `- ${c}`).join("\n") });
+  const taxonomy = TAXONOMY.map((c) => `- ${c}`).join("\n");
+  const system = prompt.system.includes("{{taxonomy}}") ? render(prompt.system, { taxonomy }) : `${prompt.system}\n\n## Taxonomy\n\n${taxonomy}`;
 
   let result;
   try {

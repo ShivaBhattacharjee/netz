@@ -10,7 +10,7 @@ const schema = z.object({
   limit: z.number().int().min(1).max(10_000),
 });
 
-export const GET = withStore(async (ctx) => NextResponse.json({ ...evalOptions(), runs: await listEvalRuns(ctx.store.id) }), { sessionOnly: true });
+export const GET = withStore(async (ctx) => NextResponse.json({ ...(await evalOptions(ctx.store.id)), runs: await listEvalRuns(ctx.store.id) }), { sessionOnly: true });
 
 export const POST = withStore(async (ctx, request) => NextResponse.json({ id: await createEvalRun(ctx.store.id, await body(request, schema)) }, { status: 202 }), {
   sessionOnly: true,

@@ -181,7 +181,7 @@ export interface EvalRun {
 
 export interface EvalOptions {
   sets: { name: string; products: number; rows: number }[];
-  prompts: { name: string; version: string }[];
+  prompts: { name: string; label: string; version: string; custom: boolean }[];
   models: { id: string; label: string; hint: string }[];
 }
 

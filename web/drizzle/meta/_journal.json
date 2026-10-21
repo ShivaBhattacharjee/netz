@@ -50,6 +50,13 @@
       "when": 1792546569852,
       "tag": "0006_crazy_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792547371000,
+      "tag": "0007_common_the_order",
+      "breakpoints": true
     }
   ]
 }

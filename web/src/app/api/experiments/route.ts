@@ -12,7 +12,7 @@ const schema = z.object({
   b: variant,
 });
 
-export const GET = withStore(async (ctx) => NextResponse.json({ ...evalOptions(), experiments: await listExperiments(ctx.store.id) }), { sessionOnly: true });
+export const GET = withStore(async (ctx) => NextResponse.json({ ...(await evalOptions(ctx.store.id)), experiments: await listExperiments(ctx.store.id) }), { sessionOnly: true });
 
 export const POST = withStore(async (ctx, request) => NextResponse.json({ id: await createExperiment(ctx.store.id, await body(request, schema)) }, { status: 202 }), {
   sessionOnly: true,

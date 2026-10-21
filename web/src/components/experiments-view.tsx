@@ -13,7 +13,7 @@ import type { EvalOptions, EvalRun, Experiment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "./common";
 import { EmptyState } from "./empty-state";
-import { OptionSelect, PromptSource, RunStatus, SAMPLE_SIZES, accuracy, fieldLabel, modelOptions, overallAccuracy, pct, promptOptions, setOptions } from "./eval-common";
+import { OptionSelect, PromptPicker, RunStatus, SAMPLE_SIZES, accuracy, fieldLabel, modelOptions, overallAccuracy, pct, setOptions } from "./eval-common";
 import { PageLoader } from "./page-loader";
 
 interface Variant {
@@ -21,7 +21,19 @@ interface Variant {
   prompt: string;
 }
 
-function NewExperiment({ options, open, onOpenChange, onStarted }: { options: EvalOptions; open: boolean; onOpenChange: (o: boolean) => void; onStarted: () => void }) {
+function NewExperiment({
+  options,
+  open,
+  onOpenChange,
+  onStarted,
+  onPromptsChanged,
+}: {
+  options: EvalOptions;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onStarted: () => void;
+  onPromptsChanged: () => void;
+}) {
   const firstPrompt = options.prompts[0]?.name ?? "build-product";
   const [name, setName] = useState("");
   const [set, setSet] = useState(options.sets[0]?.name ?? "");
@@ -50,8 +62,7 @@ function NewExperiment({ options, open, onOpenChange, onStarted }: { options: Ev
     <fieldset className="flex flex-col gap-3 border p-3">
       <legend className="px-1 text-sm font-medium">Variant {key}</legend>
       <OptionSelect id={`exp-${key}-model`} label="Model" value={value.model} onChange={(model) => set({ ...value, model })} options={modelOptions(options)} />
-      <OptionSelect id={`exp-${key}-prompt`} label="Prompt" value={value.prompt} onChange={(prompt) => set({ ...value, prompt })} options={promptOptions(options)} />
-      <PromptSource name={value.prompt} />
+      <PromptPicker id={`exp-${key}-prompt`} options={options} value={value.prompt} onChange={(prompt) => set({ ...value, prompt })} onPromptsChanged={onPromptsChanged} />
     </fieldset>
   );
 
@@ -72,9 +83,6 @@ function NewExperiment({ options, open, onOpenChange, onStarted }: { options: Ev
           {variantFields("A", a, setA)}
           {variantFields("B", b, setB)}
           {same ? <p className="text-xs text-error">Pick a different model or prompt for one variant.</p> : null}
-          {options.prompts.length < 2 ? (
-            <p className="text-xs text-muted-foreground">To test a prompt change, copy web/prompts/build-product.md to web/prompts/build-product.v4.md, edit it and bump its version. It shows up here.</p>
-          ) : null}
         </div>
         <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -201,7 +209,7 @@ export function ExperimentsView() {
   return (
     <>
       <PageHeader title="Experiments" meta="A/B tests of prompts and models" actions={data.experiments.length ? createButton("New experiment") : null} />
-      {data.sets.length ? <NewExperiment options={data} open={creating} onOpenChange={setCreating} onStarted={load} /> : null}
+      {data.sets.length ? <NewExperiment options={data} open={creating} onOpenChange={setCreating} onStarted={load} onPromptsChanged={load} /> : null}
       {data.experiments.length === 0 ? (
         <EmptyState
           title="No experiments yet"

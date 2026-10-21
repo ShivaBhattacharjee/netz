@@ -14,7 +14,7 @@ import {
   AI_FIELDS,
   AccuracyBar,
   OptionSelect,
-  PromptSource,
+  PromptPicker,
   RunStatus,
   SAMPLE_SIZES,
   accuracy,
@@ -22,12 +22,23 @@ import {
   modelOptions,
   overallAccuracy,
   pct,
-  promptOptions,
   setOptions,
 } from "./eval-common";
 import { PageLoader } from "./page-loader";
 
-function NewRun({ options, open, onOpenChange, onStarted }: { options: EvalOptions; open: boolean; onOpenChange: (o: boolean) => void; onStarted: () => void }) {
+function NewRun({
+  options,
+  open,
+  onOpenChange,
+  onStarted,
+  onPromptsChanged,
+}: {
+  options: EvalOptions;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onStarted: () => void;
+  onPromptsChanged: () => void;
+}) {
   const [set, setSet] = useState(options.sets[0]?.name ?? "");
   const [model, setModel] = useState(options.models[0]?.id ?? "");
   const [prompt, setPrompt] = useState(options.prompts[0]?.name ?? "build-product");
@@ -58,10 +69,7 @@ function NewRun({ options, open, onOpenChange, onStarted }: { options: EvalOptio
         <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-5">
           <OptionSelect id="eval-set" label="Labelled set" value={set} onChange={setSet} options={setOptions(options)} />
           <OptionSelect id="eval-model" label="Model" value={model} onChange={setModel} options={modelOptions(options)} />
-          <div className="flex flex-col gap-2">
-            <OptionSelect id="eval-prompt" label="Prompt" value={prompt} onChange={setPrompt} options={promptOptions(options)} />
-            <PromptSource name={prompt} />
-          </div>
+          <PromptPicker id="eval-prompt" options={options} value={prompt} onChange={setPrompt} onPromptsChanged={onPromptsChanged} />
           <OptionSelect id="eval-limit" label="Products to build" value={limit} onChange={setLimit} options={SAMPLE_SIZES} />
         </div>
         <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
@@ -179,7 +187,7 @@ export function EvaluationsView() {
   return (
     <>
       <PageHeader title="Evaluations" meta="Accuracy per field against a labelled set" actions={data.runs.length ? startButton("Run evaluation") : null} />
-      {data.sets.length ? <NewRun options={data} open={starting} onOpenChange={setStarting} onStarted={load} /> : null}
+      {data.sets.length ? <NewRun options={data} open={starting} onOpenChange={setStarting} onStarted={load} onPromptsChanged={load} /> : null}
 
       {data.runs.length === 0 ? (
         <EmptyState

@@ -359,3 +359,18 @@ export const evalRun = pgTable(
   },
   (t) => [index("eval_run_store_created_idx").on(t.storeId, t.createdAt), index("eval_run_experiment_idx").on(t.experimentId)],
 );
+
+export const customPrompt = pgTable(
+  "custom_prompt",
+  {
+    id: text("id").primaryKey(),
+    storeId: storeRef(),
+    name: text("name").notNull(),
+    version: text("version").notNull(),
+    system: text("system").notNull(),
+    user: text("user").notNull(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("custom_prompt_store_idx").on(t.storeId)],
+);

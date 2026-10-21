@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
-import { buildPromptVariants, loadPrompt } from "@/server/ai/prompts";
+import { CUSTOM_PREFIX, deleteCustomPrompt, resolvePrompt } from "@/server/evals/prompts";
 import { withStore } from "@/server/http";
 
 export const GET = withStore<{ name: string }>(
-  async (_ctx, _request, { name }) => {
-    if (!buildPromptVariants().some((p) => p.name === name)) return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
-    const prompt = loadPrompt(name);
-    return NextResponse.json({ name, file: `prompts/${name}.md`, version: prompt.version, system: prompt.system, user: prompt.user });
+  async (ctx, _request, { name }) => {
+    const key = decodeURIComponent(name);
+    const prompt = await resolvePrompt(ctx.store.id, key);
+    const source = key.startsWith(CUSTOM_PREFIX) ? "Saved in this store" : `web/prompts/${key}.md`;
+    return NextResponse.json({ name: prompt.name, source, version: prompt.version, system: prompt.system, user: prompt.user, custom: key.startsWith(CUSTOM_PREFIX) });
+  },
+  { sessionOnly: true },
+);
+
+export const DELETE = withStore<{ name: string }>(
+  async (ctx, _request, { name }) => {
+    await deleteCustomPrompt(ctx.store.id, decodeURIComponent(name));
+    return new NextResponse(null, { status: 204 });
   },
   { sessionOnly: true },
 );
