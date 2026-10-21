@@ -34,6 +34,44 @@ export function checkTranslation(source: string, target: string, protectedNames:
   return null;
 }
 
+const MEASUREMENT = /\d+(?:[.,]\d+)?\s?(?:mm|cm|m|kg|g|ml|cl|l|W|V|°C|°F|in|lbs?|oz)(?![\p{L}\d])|\bE\d{2}\b/gu;
+const BRACED = /\{\{[^{}]+\}\}/g;
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+interface MaskToken {
+  text: string;
+  measurement: boolean;
+}
+
+export function maskFields(fields: Record<string, string>, protectedNames: string[]) {
+  const tokens: MaskToken[] = [];
+  const names = [...new Set(protectedNames.filter((n) => n.trim().length > 1))].sort((a, b) => b.length - a.length);
+  const patterns = [BRACED, ...names.map((n) => new RegExp(escapeRegex(n), "g")), MEASUREMENT];
+  const masked: Record<string, string> = {};
+  for (const [key, text] of Object.entries(fields)) {
+    let out = text;
+    for (const pattern of patterns) {
+      out = out
+        .split(/(<[^>]*>|⟦\d+⟧)/)
+        .map((part, i) => (i % 2 ? part : part.replace(pattern, (m) => `⟦${tokens.push({ text: m, measurement: pattern === MEASUREMENT }) - 1}⟧`)))
+        .join("");
+    }
+    masked[key] = out;
+  }
+  return { masked, tokens };
+}
+
+export function unmask(text: string, tokens: MaskToken[], locale: TranslateLocale) {
+  return text.replace(/⟦(\d+)⟧/g, (m, n: string) => {
+    const token = tokens[Number(n)];
+    if (!token) return m;
+    return token.measurement ? token.text.replace(/(\d)\.(\d)/, `$1${locale === "de" || locale === "fr" ? "," : "."}$2`) : token.text;
+  });
+}
+
 export interface TranslateResult {
   fields: Record<string, string>;
   failed: Record<string, string>;
@@ -46,6 +84,7 @@ export async function translateFields(model: string, locale: TranslateLocale, fi
   const prompt = loadPrompt("translate");
   const info = LOCALES[locale];
   const keys = Object.keys(fields);
+  const { masked, tokens } = maskFields(fields, protectedNames);
   const schema = z.object(Object.fromEntries(keys.map((k) => [k, z.string()])) as Record<string, z.ZodString>);
   const jsonSchema = toResponseSchema(z.toJSONSchema(schema) as Record<string, unknown>);
 
@@ -54,7 +93,7 @@ export async function translateFields(model: string, locale: TranslateLocale, fi
     result = await generateJson({
       model,
       system: render(prompt.system, { ...info, protected: protectedNames.length ? protectedNames.map((n) => `"${n}"`).join(", ") : "(none)" }),
-      content: [{ type: "text", text: render(prompt.user, { fields: JSON.stringify(fields, null, 2) }) }],
+      content: [{ type: "text", text: render(prompt.user, { fields: JSON.stringify(masked, null, 2) }) }],
       jsonSchema,
       effort: "low",
       maxOutputTokens: 4096,
@@ -73,9 +112,9 @@ export async function translateFields(model: string, locale: TranslateLocale, fi
   const ok: Record<string, string> = {};
   const failed: Record<string, string> = {};
   for (const key of keys) {
-    const problem = checkTranslation(fields[key], parsed[key], protectedNames);
+    const problem = checkTranslation(masked[key], parsed[key], []);
     if (problem) failed[key] = problem;
-    else ok[key] = parsed[key];
+    else ok[key] = unmask(parsed[key], tokens, locale);
   }
   return { fields: ok, failed, promptVersion: prompt.version, usage: result.usage, latencyMs: result.latencyMs };
 }
