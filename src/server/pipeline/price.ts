@@ -11,8 +11,15 @@ const SYMBOLS: [RegExp, string][] = [
   [/€|\beur(o|os)?\b/i, "EUR"],
   [/£|\bgbp\b/i, "GBP"],
   [/\bchf\b|\bfr\.?(?=\s|\d|$)/i, "CHF"],
+  [/\bca?\s?\$|\bcad\b/i, "CAD"],
+  [/\bau?\s?\$|\baud\b/i, "AUD"],
+  [/\bnz\s?\$|\bnzd\b/i, "NZD"],
+  [/\bhk\s?\$|\bhkd\b/i, "HKD"],
+  [/\bs\s?\$|\bsgd\b/i, "SGD"],
   [/us\$|\$|\busd\b/i, "USD"],
 ];
+
+const UNSUPPORTED = /[¥₹₽₩₺₪₱฿]|\b(jpy|cny|rmb|inr|rub|krw|try|sek|nok|dkk|pln|czk|huf|mxn|brl|zar|kr|zł)\b/i;
 
 export function parsePrice(raw: string, defaultCurrency: string, hint: DecimalHint = "."): Price | null {
   let s = raw.trim();
@@ -25,6 +32,9 @@ export function parsePrice(raw: string, defaultCurrency: string, hint: DecimalHi
       s = s.replace(pattern, " ");
       break;
     }
+  }
+  if (!currency && UNSUPPORTED.test(s)) {
+    return { cents: null, currency: defaultCurrency, currencyDefaulted: true, error: `Unsupported currency in price "${raw}"` };
   }
   s = s
     .replace(/,[-–—]$/, ",00")

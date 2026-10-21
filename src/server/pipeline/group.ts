@@ -3,7 +3,7 @@ import { type Color, normalizeColor } from "./color";
 import type { Field, HeaderInfo } from "./headers";
 import { type DecimalHint, decimalStyle } from "./number";
 import { type Price, parsePrice } from "./price";
-import { cleanCell, detectLanguage, htmlToText, sanitizeHtml, slugify } from "./text";
+import { cleanCell, detectLanguage, htmlToText, normalizeForMatch, sanitizeHtml, slugify } from "./text";
 import { parseSize, parseWeight } from "./units";
 
 export const MAX_DESCRIPTION_CHARS = 4000;
@@ -72,11 +72,32 @@ function isVariantToken(segment: string) {
   return /^\d{1,3}([A-Z]{1,3})?$/.test(segment) || SIZE_TOKENS.has(segment) || /^[A-Z]{1,3}$/.test(segment);
 }
 
-export function groupKeyForSku(sku: string): string | null {
+function skuStem(sku: string): { key: string; padded: boolean } | null {
   const segments = sku.split(/[-_./\s]+/).filter(Boolean);
   let end = segments.length;
   while (end > 2 && isVariantToken(segments[end - 1])) end--;
-  return end === segments.length ? null : segments.slice(0, end).join("-");
+  if (end === segments.length) return null;
+  return { key: segments.slice(0, end).join("-"), padded: segments.slice(end).some((s) => /^0\d+$/.test(s)) };
+}
+
+function titleKey(r: CleanRow) {
+  return `T-${slugify(`${r.title} ${r.brand ?? ""}`, 60).toUpperCase()}`;
+}
+
+function titleTokens(title: string) {
+  return new Set(normalizeForMatch(title).split(" ").filter((w) => w.length > 2 && !/^\d+$/.test(w)));
+}
+
+function unrelatedTitles(members: CleanRow[]): [CleanRow, CleanRow] | null {
+  const firstByLanguage = new Map<string, { row: CleanRow; tokens: Set<string> }>();
+  for (const r of members) {
+    if (!r.title) continue;
+    const tokens = titleTokens(r.title);
+    const first = firstByLanguage.get(r.language);
+    if (!first) firstByLanguage.set(r.language, { row: r, tokens });
+    else if (tokens.size > 0 && first.tokens.size > 0 && ![...tokens].some((t) => first.tokens.has(t))) return [first.row, r];
+  }
+  return null;
 }
 
 export function sheetDecimalHint(rows: string[][], header: HeaderInfo): DecimalHint {
@@ -200,12 +221,30 @@ export function buildGroups(rows: CleanRow[], defaultCurrency: string): { outcom
     live.push(r);
   }
 
+  const keyed = live.map((r) => {
+    if (r.parentSku) return { r, key: r.parentSku, padded: false };
+    const stem = r.sku ? skuStem(r.sku) : null;
+    if (stem) return { r, key: stem.key, padded: stem.padded };
+    return { r, key: r.sku && !r.title ? r.sku : titleKey(r), padded: false };
+  });
+
+  // A zero-padded suffix (-001, -002) is usually an item number, not a size: those rows stay together only when their titles agree.
+  const paddedTitles = new Map<string, Set<string>>();
+  for (const k of keyed) {
+    if (!k.padded) continue;
+    const titles = paddedTitles.get(k.key) ?? new Set<string>();
+    titles.add(normalizeForMatch(k.r.title));
+    paddedTitles.set(k.key, titles);
+  }
+
   const byKey = new Map<string, CleanRow[]>();
-  for (const r of live) {
-    const key =
-      r.parentSku ?? (r.sku && groupKeyForSku(r.sku)) ?? (r.sku && !r.title ? r.sku : null) ?? `T-${slugify(`${r.title} ${r.brand ?? ""}`, 60).toUpperCase()}`;
+  const skuKeys = new Set<string>();
+  for (const k of keyed) {
+    const split = k.padded && k.r.title && (paddedTitles.get(k.key)?.size ?? 0) > 1;
+    const key = split ? titleKey(k.r) : k.key;
+    if (!split && !key.startsWith("T-")) skuKeys.add(key);
     const list = byKey.get(key) ?? [];
-    list.push(r);
+    list.push(k.r);
     byKey.set(key, list);
   }
 
@@ -213,6 +252,11 @@ export function buildGroups(rows: CleanRow[], defaultCurrency: string): { outcom
   for (const [groupKey, members] of byKey) {
     members.sort((a, b) => a.row - b.row);
     const reasons: string[] = [];
+    const unrelated = skuKeys.has(groupKey) ? unrelatedTitles(members) : null;
+    if (unrelated) {
+      const [a, b] = unrelated;
+      reasons.push(`Rows ${a.row} and ${b.row} share SKU prefix ${groupKey} but have unrelated titles ("${a.title}", "${b.title}"); check they are one product`);
+    }
 
     const bySku = new Map<string, CleanRow[]>();
     const derived = new Set<string>();
