@@ -284,8 +284,8 @@ export function MetricsView() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-1.5 w-full max-w-40 overflow-hidden rounded-full bg-muted">
-                        <span className="h-full bg-success" style={{ width: `${(c.current / c.total) * 100}%` }} />
-                        <span className="h-full bg-warning" style={{ width: `${(c.outOfDate / c.total) * 100}%` }} />
+                        <span className="h-full bg-success" style={{ width: `${(c.current / Math.max(1, c.total)) * 100}%` }} />
+                        <span className="h-full bg-warning" style={{ width: `${(c.outOfDate / Math.max(1, c.total)) * 100}%` }} />
                       </div>
                       <span className="tabular-nums">{formatPercent(c.current, c.total)}</span>
                     </div>
