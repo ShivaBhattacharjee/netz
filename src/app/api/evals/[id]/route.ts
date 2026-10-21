@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getEvalRun } from "@/server/evals/service";
+import { deleteEvalRun, getEvalRun } from "@/server/evals/service";
 import { withStore } from "@/server/http";
 
 export const GET = withStore<{ id: string }>(
@@ -10,3 +10,8 @@ export const GET = withStore<{ id: string }>(
   },
   { sessionOnly: true },
 );
+
+export const DELETE = withStore<{ id: string }>(async (ctx, _request, { id }) => {
+  await deleteEvalRun(ctx.store.id, id);
+  return new NextResponse(null, { status: 204 });
+}, { sessionOnly: true });

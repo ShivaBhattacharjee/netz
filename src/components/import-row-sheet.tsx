@@ -72,14 +72,14 @@ function Body({ detail, onOpenRow }: { detail: ImportRowDetail; onOpenRow: (row:
   return (
     <>
       {reason && tone ? (
-        <div className={cn("flex gap-2 rounded-lg border px-3 py-2 text-sm", tone === "error" ? "border-error/30 bg-error/10" : "border-warning/30 bg-warning/10")}>
+        <div className={cn("flex gap-2 border px-3 py-2 text-sm", tone === "error" ? "border-error/30 bg-error/10" : "border-warning/30 bg-warning/10")}>
           <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", tone === "error" ? "text-error" : "text-warning")} />
           <span>{reason}</span>
         </div>
       ) : null}
 
       {detail.duplicate_of !== null ? (
-        <button type="button" onClick={() => onOpenRow(detail.duplicate_of!)} className="plain-button flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm hover:bg-muted/50">
+        <button type="button" onClick={() => onOpenRow(detail.duplicate_of!)} className="plain-button flex items-center gap-2 border px-3 py-2 text-left text-sm hover:bg-muted/50">
           <CornerDownRight className="size-4 text-muted-foreground" />
           Duplicate of row {detail.duplicate_of}. It was not processed again.
         </button>
@@ -87,7 +87,7 @@ function Body({ detail, onOpenRow }: { detail: ImportRowDetail; onOpenRow: (row:
 
       {detail.product ? (
         <Section title="Product">
-          <Link href={`/products/${detail.product.id}`} className="flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm hover:bg-muted/50">
+          <Link href={`/products/${detail.product.id}`} className="flex items-center gap-3 border px-3 py-2.5 text-sm hover:bg-muted/50">
             <span className="min-w-0 flex-1 truncate font-medium">{detail.product.title}</span>
             <ProductStatusLabel status={detail.product.status} />
             <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
@@ -109,7 +109,7 @@ function Body({ detail, onOpenRow }: { detail: ImportRowDetail; onOpenRow: (row:
       ) : null}
 
       <Section title="As uploaded">
-        <dl className="divide-y rounded-lg border text-sm">
+        <dl className="divide-y border text-sm">
           {Object.entries(detail.cells).map(([column, value]) => (
             <div key={column} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3 px-3 py-2">
               <dt className="truncate text-muted-foreground">{column}</dt>

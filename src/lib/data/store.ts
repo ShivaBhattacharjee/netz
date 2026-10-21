@@ -296,8 +296,10 @@ export const actions = {
     try {
       const { product } = await api<{ product: Product }>(`/api/products/${id}`, { method: "PATCH", json: edit });
       replaceProduct(product);
+      return true;
     } catch (error) {
       fail(error, "Could not save the change");
+      return false;
     }
   },
 

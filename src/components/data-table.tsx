@@ -51,7 +51,7 @@ export function DataTable<T>({
   const colCount = table.getVisibleLeafColumns().length;
 
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="overflow-hidden border">
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ minWidth }}>
           <caption className="sr-only">{caption}</caption>

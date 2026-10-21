@@ -1,13 +1,15 @@
 "use client";
 
-import { Plus, RotateCcw, Square } from "lucide-react";
-import { type MouseEvent, type ReactNode, useEffect, useState } from "react";
+import { MoreHorizontal, Play, Plus, RotateCcw, Square, Trash2 } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/data/api";
 import { formatNumber } from "@/lib/format";
@@ -47,6 +49,7 @@ export function isValidSampleSize(value: string) {
 
 export function SampleSizeSelect({ id, label, value, onChange, available }: { id: string; label: string; value: string; onChange: (v: string) => void; available?: number }) {
   const [custom, setCustom] = useState(() => !SAMPLE_SIZES.some((o) => o.value === value));
+  useEffect(() => setCustom(!SAMPLE_SIZES.some((o) => o.value === value)), [value]);
   const max = Math.min(available ?? MAX_SAMPLE, MAX_SAMPLE);
   const invalid = custom && !isValidSampleSize(value);
 
@@ -105,40 +108,76 @@ export function pct(value: number | null) {
 }
 
 export function RunStatus({ run }: { run: EvalRun }) {
-  if (run.status === "completed") return <StatusLabel tone="success">Completed</StatusLabel>;
-  if (run.status === "failed") return <StatusLabel tone="error">Failed</StatusLabel>;
-  if (run.status === "queued") return <StatusLabel tone="neutral">Queued</StatusLabel>;
-  return (
-    <StatusLabel tone="info">
-      Running {formatNumber(run.done)}/{formatNumber(run.total)}
-    </StatusLabel>
-  );
+  const label = {
+    queued: "Queued",
+    running: `Running ${formatNumber(run.done)}/${formatNumber(run.total)}`,
+    failed: run.error === "Stopped" ? "Stopped" : "Failed",
+    completed: "Completed",
+  }[run.status];
+  const tone = run.status === "failed" && run.error === "Stopped" ? "neutral" : ({ queued: "neutral", running: "info", failed: "error", completed: "success" } as const)[run.status];
+  const color = {
+    success: "border-success/30 bg-success/10",
+    error: "border-error/30 bg-error/10",
+    info: "border-info/30 bg-info/10",
+    neutral: "border-border bg-muted/30",
+  }[tone];
+  return <span className={cn("inline-flex self-start items-center border px-1.5 py-0.5 text-xs", color)}><StatusLabel tone={tone}>{label}</StatusLabel></span>;
 }
 
-export function RunActions({ run, onChanged }: { run: EvalRun; onChanged: () => void }) {
+export function RunActions({ run, onChanged, onDeleted, onRetry }: { run: EvalRun; onChanged: () => void; onDeleted?: () => void; onRetry: () => void }) {
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const action = run.status === "queued" || run.status === "running" ? "stop" : run.status === "failed" ? "retry" : null;
-  if (!action) return null;
 
-  async function act(event: MouseEvent) {
-    event.stopPropagation();
+  async function act(action: "stop" | "delete") {
     setBusy(true);
     try {
-      await api(`/api/evals/${run.id}/${action}`, { method: "POST" });
-      toast.success(action === "stop" ? "Evaluation stopped" : "Evaluation queued again");
+      await api(`/api/evals/${run.id}${action === "delete" ? "" : `/${action}`}`, { method: action === "delete" ? "DELETE" : "POST" });
+      toast.success(action === "stop" ? "Evaluation stopped" : "Evaluation deleted");
+      setConfirmDelete(false);
       onChanged();
+      if (action === "delete") onDeleted?.();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Could not ${action} the evaluation`);
+      toast.error(e instanceof Error ? e.message : `Could not ${action === "delete" ? "delete" : action} the evaluation`);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Button size="xs" variant="outline" disabled={busy} onClick={(e) => void act(e)} onKeyDown={(e) => e.stopPropagation()}>
-      {action === "stop" ? <Square data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}
-      {action === "stop" ? "Stop" : "Retry"}
-    </Button>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon-sm" variant="ghost" aria-label={`Actions for ${run.label}`} disabled={busy} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <MoreHorizontal aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-40">
+          {action ? (
+            <DropdownMenuItem onSelect={() => action === "retry" ? onRetry() : void act("stop")}>
+              {action === "stop" ? <Square /> : <RotateCcw />}
+              {action === "stop" ? "Stop run" : "Retry run"}
+            </DropdownMenuItem>
+          ) : null}
+          {action ? <DropdownMenuSeparator /> : null}
+          <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+            <Trash2 /> Delete run
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this evaluation?</AlertDialogTitle>
+            <AlertDialogDescription>This removes the run and its results permanently.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-error text-background hover:bg-error/85" disabled={busy} onClick={(e) => { e.preventDefault(); void act("delete"); }}>Delete run</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -187,6 +226,79 @@ export function OptionSelect({
 
 export function setOptions(options: EvalOptions) {
   return options.sets.map((s) => ({ value: s.id, label: `${s.name} · ${formatNumber(s.products)} products` }));
+}
+
+export function RunSetupSheet({
+  options,
+  open,
+  onOpenChange,
+  onStarted,
+  onPromptsChanged,
+  initialRun,
+}: {
+  options: EvalOptions;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onStarted: () => void;
+  onPromptsChanged: () => void;
+  initialRun?: EvalRun | null;
+}) {
+  const [picked, setSet] = useState(options.sets[0]?.id ?? "");
+  const [model, setModel] = useState(options.models[0]?.id ?? "");
+  const [prompt, setPrompt] = useState(options.prompts[0]?.name ?? "build-product");
+  const [limit, setLimit] = useState("25");
+  const [busy, setBusy] = useState(false);
+  const set = options.sets.some((s) => s.id === picked) ? picked : (options.sets[0]?.id ?? "");
+
+  useEffect(() => {
+    if (!open) return;
+    setSet(options.sets.find((s) => s.name === initialRun?.set)?.id ?? options.sets[0]?.id ?? "");
+    setModel(options.models.some((m) => m.id === initialRun?.model) ? initialRun!.model : (options.models[0]?.id ?? ""));
+    setPrompt(options.prompts.some((p) => p.name === initialRun?.prompt) ? initialRun!.prompt : (options.prompts[0]?.name ?? "build-product"));
+    setLimit(String(initialRun?.sample_limit ?? 25));
+  // Reset when the sheet opens or a different run is selected; polling must not overwrite edits.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialRun?.id]);
+
+  async function start() {
+    setBusy(true);
+    try {
+      await api("/api/evals", { method: "POST", json: { set, model, prompt, limit: Number(limit) } });
+      toast.success("Evaluation started");
+      onOpenChange(false);
+      onStarted();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start the evaluation");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
+        <SheetHeader className="border-b p-5">
+          <SheetTitle className="text-lg">{initialRun ? "Retry evaluation" : "Run evaluation"}</SheetTitle>
+          <SheetDescription>
+            {initialRun ? "Review or change the settings, then start a new evaluation run." : "Runs the real pipeline on a labelled set and scores every field against the labels. AI calls are billed."}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-5">
+          <OptionSelect id="eval-set" label="Labelled set" value={set} onChange={setSet} options={setOptions(options)} />
+          <OptionSelect id="eval-model" label="Model" value={model} onChange={setModel} options={modelOptions(options)} />
+          <PromptPicker id="eval-prompt" options={options} value={prompt} onChange={setPrompt} onPromptsChanged={onPromptsChanged} />
+          <SampleSizeSelect id="eval-limit" label="Products to build" value={limit} onChange={setLimit} available={options.sets.find((s) => s.id === set)?.products} />
+        </div>
+        <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button disabled={!set || !model || !isValidSampleSize(limit) || busy} onClick={() => void start()}>
+            <Play data-icon="inline-start" />
+            {busy ? "Starting" : initialRun ? "Retry evaluation" : "Start evaluation"}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 export function modelOptions(options: EvalOptions) {

@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { aiCall, importGroup, photo, product, productPhoto, sourceRow, translation, variant } from "@/db/schema";
+import { aiCall, importGroup, photo, product, productPhoto, sourceRow, translation, upload, variant } from "@/db/schema";
 import type {
   FieldTranslation,
   Locale,
@@ -11,7 +11,7 @@ import type {
   TranslatableField,
   TranslatedLocale,
 } from "@/lib/types";
-import { sha256 } from "./ids";
+import { newId, sha256 } from "./ids";
 import { enqueueTranslate } from "./queues";
 import { ATTRIBUTE_FIELD_PREFIX, englishSourceHash } from "./jobs/translate";
 import { emitWebhook } from "./webhooks";
@@ -228,6 +228,7 @@ export async function sendBack(storeId: string, id: string, note: string) {
 export type ProductEdit =
   | { kind: "field"; field: "title" | "description_html" | "category"; value: string }
   | { kind: "variant"; sku: string; price_cents: number | null; currency: string; weight_grams: number | null }
+  | { kind: "photo"; upload_id: string }
   | { kind: "tags"; tags: string[] }
   | { kind: "attribute"; key: string; value: string }
   | { kind: "translation"; locale: TranslatedLocale; field: TranslatableField; text: string }
@@ -235,6 +236,36 @@ export type ProductEdit =
 
 export async function editProduct(storeId: string, id: string, edit: ProductEdit) {
   const row = await owned(storeId, id);
+
+  if (edit.kind === "photo") {
+    const [source] = await db
+      .select()
+      .from(upload)
+      .where(and(eq(upload.id, edit.upload_id), eq(upload.storeId, storeId), eq(upload.kind, "photo")))
+      .limit(1);
+    if (!source) throw new ProductInputError("Photo upload not found");
+    const [last] = await db
+      .select({ position: productPhoto.position })
+      .from(productPhoto)
+      .where(eq(productPhoto.productId, id))
+      .orderBy(desc(productPhoto.position))
+      .limit(1);
+    const photoId = newId("ph");
+    await db.transaction(async (tx) => {
+      await tx.insert(photo).values({
+        id: photoId,
+        storeId,
+        fileName: source.fileName,
+        sha256: source.sha256,
+        storageKey: source.storageKey,
+        status: "matched",
+        groupKey: row.groupKey,
+      });
+      await tx.insert(productPhoto).values({ productId: id, photoId, position: (last?.position ?? -1) + 1 });
+      await tx.delete(upload).where(eq(upload.id, source.id));
+    });
+    return;
+  }
 
   if (edit.kind === "field") {
     const column = { title: "title", description_html: "descriptionHtml", category: "category" } as const;

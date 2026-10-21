@@ -146,7 +146,7 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card", className)}>
+    <section className={cn("flex min-w-0 flex-col overflow-hidden border bg-card", className)}>
       <header className="flex h-11 items-center gap-2 border-b px-4">
         {Icon ? <Icon aria-hidden className="size-4 text-muted-foreground" /> : null}
         <h2 className="text-sm font-medium">{title}</h2>
@@ -159,11 +159,11 @@ export function Panel({
 
 export function StatCard({ label, value, hint, icon: Icon }: { label: string; value: ReactNode; hint?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-xl border bg-card p-4">
+    <div className="flex min-w-0 flex-col gap-1 border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-muted-foreground">{label}</span>
         {Icon ? (
-          <span className="flex size-7 items-center justify-center rounded-md border bg-muted/40">
+          <span className="flex size-7 items-center justify-center border bg-muted/40">
             <Icon aria-hidden className="size-3.5 text-muted-foreground" />
           </span>
         ) : null}

@@ -1,23 +1,26 @@
 "use client";
 
-import { FlaskConical, Plus, Trophy, Upload } from "lucide-react";
+import { FlaskConical, MoreHorizontal, Plus, RotateCcw, Square, Trash2, Trophy, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/data/api";
 import { formatDateTime, formatDuration, formatNumber, formatUsd } from "@/lib/format";
 import type { EvalOptions, EvalRun, Experiment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "./common";
 import { EmptyState } from "./empty-state";
-import { UploadEvalSet } from "./eval-sets";
+import { EvalSetsPanel, UploadEvalSet } from "./eval-sets";
 import {
   OptionSelect,
   PromptPicker,
-  RunActions,
+  RunSetupSheet,
   RunStatus,
   SampleSizeSelect,
   accuracy,
@@ -131,7 +134,7 @@ const COMPARED: { key: string; label: string; better: "higher" | "lower"; value:
   { key: "latency", label: "p50 build time", better: "lower", value: (r) => r.p50_ms || null, format: (v) => (v === null ? "–" : formatDuration(v)) },
 ];
 
-function Comparison({ experiment, onChanged }: { experiment: Experiment; onChanged: () => void }) {
+function Comparison({ experiment }: { experiment: Experiment }) {
   const [a, b] = experiment.variants;
   const finished = a?.status === "completed" && b?.status === "completed";
   if (!a || !b) return null;
@@ -160,12 +163,11 @@ function Comparison({ experiment, onChanged }: { experiment: Experiment; onChang
           </thead>
           <tbody>
             <tr className="border-b">
-              <td className="px-4 py-2.5 text-muted-foreground">Status</td>
+              <th scope="row" className="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
               {[a, b].map((r) => (
                 <td key={r.id} className="px-4 py-2.5 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <RunStatus run={r} />
-                    <RunActions run={r} onChanged={onChanged} />
                   </div>
                   {r.error ? <span className="mt-0.5 block text-xs text-error">{r.error}</span> : null}
                 </td>
@@ -177,7 +179,7 @@ function Comparison({ experiment, onChanged }: { experiment: Experiment; onChang
               const winner = finished && va !== null && vb !== null && va !== vb ? ((m.better === "higher" ? va > vb : va < vb) ? a.id : b.id) : null;
               return (
                 <tr key={m.key} className="border-b last:border-0">
-                  <td className="px-4 py-2.5 text-muted-foreground">{m.label}</td>
+                  <th scope="row" className="px-4 py-2.5 text-left font-medium text-muted-foreground">{m.label}</th>
                   {[
                     [a, va],
                     [b, vb],
@@ -197,10 +199,98 @@ function Comparison({ experiment, onChanged }: { experiment: Experiment; onChang
   );
 }
 
+function ExperimentActions({ experiment, onChanged, onRetry }: { experiment: Experiment; onChanged: () => void; onRetry: (run: EvalRun) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const active = experiment.variants.filter((run) => run.status === "queued" || run.status === "running");
+  const failed = experiment.variants.filter((run) => run.status === "failed");
+
+  async function stopRun(run: EvalRun) {
+    setBusy(true);
+    try {
+      await api(`/api/evals/${run.id}/stop`, { method: "POST" });
+      toast.success(`${run.label} stopped`);
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `Could not stop ${run.label}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    setBusy(true);
+    try {
+      await api(`/api/experiments/${experiment.id}`, { method: "DELETE" });
+      toast.success("Experiment deleted");
+      setConfirmDelete(false);
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete the experiment");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon-sm" variant="ghost" aria-label={`Actions for ${experiment.name}`} disabled={busy} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <MoreHorizontal aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {active.map((run) => (
+            <DropdownMenuItem key={run.id} onSelect={() => void stopRun(run)}>
+              <Square /> Stop {run.label}
+            </DropdownMenuItem>
+          ))}
+          {failed.map((run) => (
+            <DropdownMenuItem key={run.id} onSelect={() => onRetry(run)}>
+              <RotateCcw /> Retry {run.label}
+            </DropdownMenuItem>
+          ))}
+          {(active.length || failed.length) ? <DropdownMenuSeparator /> : null}
+          <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+            <Trash2 /> Delete experiment
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this experiment?</AlertDialogTitle>
+            <AlertDialogDescription>This removes the experiment and both runs with their results.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-error text-background hover:bg-error/85" disabled={busy} onClick={(e) => { e.preventDefault(); void remove(); }}>Delete experiment</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function RunCell({ run }: { run?: EvalRun }) {
+  if (!run) return <span className="text-muted-foreground">–</span>;
+  return (
+    <div className="flex min-w-44 flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{run.model} · {run.prompt_version}</span>
+      <RunStatus run={run} />
+    </div>
+  );
+}
+
 export function ExperimentsView() {
   const [data, setData] = useState<(EvalOptions & { experiments: Experiment[] }) | null>(null);
   const [creating, setCreating] = useState(false);
+  const [retryRun, setRetryRun] = useState<EvalRun | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [tab, setTab] = useState("experiments");
+  const [openExperiment, setOpenExperiment] = useState<string | null>(null);
 
   const load = useCallback(() => {
     api<EvalOptions & { experiments: Experiment[] }>("/api/experiments")
@@ -209,6 +299,7 @@ export function ExperimentsView() {
   }, []);
 
   const running = data?.experiments.some((e) => e.variants.some((v) => v.status === "queued" || v.status === "running")) ?? false;
+  const selectedExperiment = data?.experiments.find((e) => e.id === openExperiment) ?? null;
   useEffect(() => {
     load();
   }, [load]);
@@ -242,32 +333,116 @@ export function ExperimentsView() {
 
   return (
     <>
-      <PageHeader title="Experiments" meta="A/B tests of prompts and models" actions={data.experiments.length ? createButton("New experiment") : null} />
-      {data.sets.length ? <NewExperiment options={data} open={creating} onOpenChange={setCreating} onStarted={load} onPromptsChanged={load} /> : null}
-      {data.experiments.length === 0 ? (
-        <EmptyState
-          title="No experiments yet"
-          description={
-            data.sets.length
-              ? "Compare two models or prompts on the same labelled products: accuracy, invented claims, cost per 1,000 products and speed."
-              : "Upload a supplier sheet with a labels.json of the expected products first, then compare two models or prompts on it."
-          }
-          action={
-            data.sets.length ? (
-              createButton("Create experiment")
-            ) : (
-              <Button onClick={() => setUploading(true)}>
-                <Upload data-icon="inline-start" />
-                Upload labelled set
-              </Button>
-            )
-          }
-        />
+      <PageHeader
+        title="Experiments"
+        meta="A/B tests of prompts and models"
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setUploading(true)}>
+              <Upload data-icon="inline-start" />
+              Upload set
+            </Button>
+            {data.sets.length ? createButton("New experiment") : null}
+          </>
+        }
+      />
+      {data.sets.length ? (
+        <>
+          <NewExperiment options={data} open={creating} onOpenChange={setCreating} onStarted={load} onPromptsChanged={load} />
+          <RunSetupSheet
+            options={data}
+            open={retrying}
+            initialRun={retryRun}
+            onOpenChange={(open) => { setRetrying(open); if (!open) setRetryRun(null); }}
+            onStarted={load}
+            onPromptsChanged={load}
+          />
+        </>
       ) : null}
-      <UploadEvalSet open={uploading} onOpenChange={setUploading} onCreated={load} />
-      {data.experiments.map((e) => (
-        <Comparison key={e.id} experiment={e} onChanged={load} />
-      ))}
+      <Tabs value={tab} onValueChange={setTab} className="gap-5">
+        <TabsList variant="line" aria-label="Experiment sections">
+          <TabsTrigger value="experiments">Experiments</TabsTrigger>
+          <TabsTrigger value="sets">Labelled sets{data.sets.length ? ` · ${data.sets.length}` : ""}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="experiments" className="flex flex-col gap-6">
+          {data.experiments.length === 0 ? (
+            <EmptyState
+              title="No experiments yet"
+              description={data.sets.length
+                ? "Compare two models or prompts on the same labelled products: accuracy, invented claims, cost per 1,000 products and speed."
+                : "Upload a supplier sheet with a labels.json of the expected products first, then compare two models or prompts on it."}
+              action={data.sets.length ? createButton("Create experiment") : null}
+              className="py-8 [&_svg]:size-24"
+            />
+          ) : null}
+          {data.experiments.length ? (
+            <Panel title="Experiments" icon={FlaskConical} bodyClassName="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-sm">
+                  <thead className="text-xs text-muted-foreground">
+                    <tr className="border-b">
+                      <th scope="col" className="h-10 px-4 text-left font-medium">Experiment</th>
+                      <th scope="col" className="h-10 px-4 text-left font-medium">Labelled set</th>
+                      <th scope="col" className="h-10 px-4 text-left font-medium">Variant A</th>
+                      <th scope="col" className="h-10 px-4 text-left font-medium">Variant B</th>
+                      <th scope="col" className="h-10 px-4 text-right font-medium">Created</th>
+                      <th scope="col" className="h-10 w-12 px-2"><span className="sr-only">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.experiments.map((experiment) => {
+                      const variantA = experiment.variants.find((run) => run.label === "A");
+                      const variantB = experiment.variants.find((run) => run.label === "B");
+                      return (
+                        <tr
+                          key={experiment.id}
+                          tabIndex={0}
+                          aria-label={`View results for ${experiment.name}`}
+                          onClick={() => setOpenExperiment(experiment.id)}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenExperiment(experiment.id); } }}
+                          className="cursor-pointer border-b last:border-0 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+                        >
+                          <td className="px-4 py-3 font-medium">{experiment.name}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{experiment.set}</td>
+                          <td className="px-4 py-3"><RunCell run={variantA} /></td>
+                          <td className="px-4 py-3"><RunCell run={variantB} /></td>
+                          <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{formatDateTime(experiment.created_at)}</td>
+                          <td className="px-2 py-2 text-right" onClick={(e) => e.stopPropagation()}><ExperimentActions experiment={experiment} onChanged={load} onRetry={(run) => { setRetryRun(run); setRetrying(true); }} /></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          ) : null}
+        </TabsContent>
+        <TabsContent value="sets">
+          {data.sets.length ? (
+            <EvalSetsPanel sets={data.sets} onChanged={load} />
+          ) : (
+            <EmptyState
+              title="No labelled sets yet"
+              description="Upload a supplier sheet and labels.json to run evaluations and compare prompts or models."
+              className="py-8 [&_svg]:size-24"
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+      <Sheet open={selectedExperiment !== null} onOpenChange={(open) => !open && setOpenExperiment(null)}>
+        <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-5xl">
+          {selectedExperiment ? (
+            <>
+              <SheetHeader className="border-b p-5">
+                <SheetTitle className="text-lg">{selectedExperiment.name}</SheetTitle>
+                <SheetDescription>{selectedExperiment.set} · {formatDateTime(selectedExperiment.created_at)}</SheetDescription>
+              </SheetHeader>
+              <div className="p-5"><Comparison experiment={selectedExperiment} /></div>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+      <UploadEvalSet open={uploading} onOpenChange={setUploading} onCreated={() => { load(); setTab("sets"); }} />
     </>
   );
 }

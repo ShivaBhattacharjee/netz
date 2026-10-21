@@ -123,6 +123,13 @@ export async function retryEvalRun(storeId: string, id: string) {
   await queue(QUEUE.eval).add("eval", { runId: id }, { jobId: `${id}__${Date.now().toString(36)}`, attempts: 1 });
 }
 
+export async function deleteEvalRun(storeId: string, id: string) {
+  const run = await ownedRun(storeId, id);
+  if (run.experimentId) throw new EvalSetError("Delete the experiment to remove its runs");
+  if (run.status === "queued" || run.status === "running") await stopEvalRun(storeId, id);
+  await db.delete(evalRun).where(and(eq(evalRun.id, id), eq(evalRun.storeId, storeId)));
+}
+
 export async function listExperiments(storeId: string) {
   const experiments = await db.select().from(experiment).where(eq(experiment.storeId, storeId)).orderBy(desc(experiment.createdAt)).limit(30);
   const runs = experiments.length
@@ -138,6 +145,14 @@ export async function listExperiments(storeId: string) {
       .sort((a, b) => a.label.localeCompare(b.label))
       .map((r) => toRun(r, true)),
   }));
+}
+
+export async function deleteExperiment(storeId: string, id: string) {
+  const [record] = await db.select({ id: experiment.id }).from(experiment).where(and(eq(experiment.id, id), eq(experiment.storeId, storeId)));
+  if (!record) throw new EvalSetError("Experiment not found");
+  const runs = await db.select({ id: evalRun.id, status: evalRun.status }).from(evalRun).where(eq(evalRun.experimentId, id));
+  await Promise.all(runs.filter((run) => run.status === "queued" || run.status === "running").map((run) => stopEvalRun(storeId, run.id)));
+  await db.delete(experiment).where(and(eq(experiment.id, id), eq(experiment.storeId, storeId)));
 }
 
 export async function createExperiment(storeId: string, input: { name: string; set: string; limit: number; a: VariantInput; b: VariantInput }) {

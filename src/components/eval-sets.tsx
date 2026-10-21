@@ -1,6 +1,6 @@
 "use client";
 
-import { Braces, Database, FileSpreadsheet, Trash2, Upload } from "lucide-react";
+import { Braces, FileSpreadsheet, Trash2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -21,7 +21,6 @@ import { api } from "@/lib/data/api";
 import { formatBytes, formatDateTime, formatNumber } from "@/lib/format";
 import type { EvalSet } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Panel } from "./common";
 
 const SHEET_LIMIT = 25 * 1024 * 1024;
 const LABELS_LIMIT = 25 * 1024 * 1024;
@@ -126,7 +125,7 @@ export function UploadEvalSet({ open, onOpenChange, onCreated }: { open: boolean
             addFiles(e.dataTransfer.files);
           }}
           className={cn(
-            "plain-button flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "plain-button flex flex-col items-center gap-2 border border-dashed px-6 py-8 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             dragging ? "border-foreground bg-muted" : "border-input hover:bg-muted/50",
           )}
         >
@@ -148,13 +147,16 @@ export function UploadEvalSet({ open, onOpenChange, onCreated }: { open: boolean
           }}
         />
 
-        <ul className="flex flex-col divide-y rounded-lg border text-sm">
+        <ul className="flex flex-col divide-y border text-sm">
           <li className="flex items-center gap-3 px-3 py-2.5">
             <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" />
             {sheet ? (
               <>
                 <span className="min-w-0 flex-1 truncate">{sheet.name}</span>
                 <span className="text-xs tabular-nums text-muted-foreground">{formatBytes(sheet.size)}</span>
+                <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove ${sheet.name}`} onClick={() => setSheet(null)}>
+                  <X />
+                </Button>
               </>
             ) : (
               <span className="text-muted-foreground">Supplier sheet (CSV or XLSX)</span>
@@ -166,6 +168,9 @@ export function UploadEvalSet({ open, onOpenChange, onCreated }: { open: boolean
               <>
                 <span className="min-w-0 flex-1 truncate">{labels.name}</span>
                 <span className="text-xs tabular-nums text-muted-foreground">{formatBytes(labels.size)}</span>
+                <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove ${labels.name}`} onClick={() => setLabels(null)}>
+                  <X />
+                </Button>
               </>
             ) : (
               <span className="text-muted-foreground">labels.json</span>
@@ -199,36 +204,43 @@ export function UploadEvalSet({ open, onOpenChange, onCreated }: { open: boolean
   );
 }
 
-export function EvalSetsPanel({ sets, onUpload, onChanged }: { sets: EvalSet[]; onUpload: () => void; onChanged: () => void }) {
+export function EvalSetsPanel({ sets, onChanged }: { sets: EvalSet[]; onChanged: () => void }) {
   const [deleting, setDeleting] = useState<EvalSet | null>(null);
 
   return (
-    <Panel
-      title="Labelled sets"
-      icon={Database}
-      bodyClassName="p-0"
-      action={
-        <Button size="sm" variant="outline" onClick={onUpload}>
-          <Upload data-icon="inline-start" />
-          Upload set
-        </Button>
-      }
-    >
-      <ul className="flex flex-col divide-y text-sm">
-        {sets.map((s) => (
-          <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-            <div className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{s.name}</span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {s.file_name} · {formatNumber(s.products)} products · {formatNumber(s.rows)} rows · {formatDateTime(s.created_at)}
-              </span>
-            </div>
-            <Button variant="ghost" size="icon-sm" aria-label={`Delete ${s.name}`} onClick={() => setDeleting(s)}>
-              <Trash2 />
-            </Button>
-          </li>
-        ))}
-      </ul>
+    <div className="overflow-hidden border">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-sm">
+          <thead className="text-xs text-muted-foreground">
+            <tr className="border-b">
+              <th scope="col" className="h-10 px-4 text-left font-medium">Set</th>
+              <th scope="col" className="h-10 px-4 text-left font-medium">File</th>
+              <th scope="col" className="h-10 px-4 text-right font-medium">Products</th>
+              <th scope="col" className="h-10 px-4 text-right font-medium">Rows</th>
+              <th scope="col" className="h-10 px-4 text-right font-medium">Added</th>
+              <th scope="col" className="h-10 w-12 px-2"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sets.map((s) => (
+              <tr key={s.id} className="border-b last:border-0">
+                <th scope="row" className="px-4 py-2.5 text-left font-medium">
+                  {s.name}
+                </th>
+                <td className="max-w-64 truncate px-4 py-2.5 text-muted-foreground">{s.file_name}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{formatNumber(s.products)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{formatNumber(s.rows)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{formatDateTime(s.created_at)}</td>
+                <td className="px-2 py-1.5 text-right">
+                  <Button variant="ghost" size="icon-sm" aria-label={`Delete ${s.name}`} onClick={() => setDeleting(s)}>
+                    <Trash2 />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <AlertDialog open={deleting !== null} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
@@ -256,6 +268,6 @@ export function EvalSetsPanel({ sets, onUpload, onChanged }: { sets: EvalSet[]; 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Panel>
+    </div>
   );
 }

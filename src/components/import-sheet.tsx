@@ -68,7 +68,7 @@ function Body({ job }: { job: ImportJob }) {
             <ImportBar job={job} />
             <dl className="grid grid-cols-4 gap-2">
               {counts.map((c) => (
-                <div key={c.label} className="flex flex-col gap-1 rounded-lg border p-2.5">
+                <div key={c.label} className="flex flex-col gap-1 border p-2.5">
                   <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span aria-hidden className={`size-1.5 rounded-full ${c.dot}`} />
                     {c.label}

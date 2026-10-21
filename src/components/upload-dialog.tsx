@@ -191,7 +191,7 @@ export function UploadButton({ label = "Upload", size, pageDrop = false }: { lab
             addFiles(e.dataTransfer.files);
           }}
           className={cn(
-            "plain-button flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "plain-button flex flex-col items-center gap-2 border border-dashed px-6 py-8 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             dragging ? "border-foreground bg-muted" : "border-input hover:bg-muted/50",
           )}
         >
@@ -216,7 +216,7 @@ export function UploadButton({ label = "Upload", size, pageDrop = false }: { lab
         />
 
         {hasFiles ? (
-          <ul className="flex flex-col divide-y rounded-lg border text-sm">
+          <ul className="flex flex-col divide-y border text-sm">
             <li className="flex items-center gap-3 px-3 py-2.5">
               <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" />
               {staged.sheet ? (

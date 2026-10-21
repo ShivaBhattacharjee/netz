@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export function UnmatchedPhotos({ photos, compact = false }: { photos: { name: string; url: string | null }[]; compact?: boolean }) {
   return (
-    <Collapsible className="group/photos shrink-0 overflow-hidden rounded-xl border border-warning/30 bg-warning/5">
+    <Collapsible className="group/photos shrink-0 overflow-hidden border border-warning/30 bg-warning/5">
       <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm">
         <AlertTriangle className="size-4 shrink-0 text-warning" />
         <span className="flex-1">
@@ -17,7 +17,7 @@ export function UnmatchedPhotos({ photos, compact = false }: { photos: { name: s
         </span>
         <span className="flex -space-x-2 group-data-[state=open]/photos:hidden">
           {photos.slice(0, 3).map((p) => (
-            <span key={p.name} className="flex size-7 items-center justify-center overflow-hidden rounded-md border-2 border-background bg-muted">
+            <span key={p.name} className="flex size-7 items-center justify-center overflow-hidden border-2 border-background bg-muted">
               {p.url ? (
                 // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
                 <img src={p.url} alt="" className="size-full object-cover" />
@@ -33,7 +33,7 @@ export function UnmatchedPhotos({ photos, compact = false }: { photos: { name: s
         <ul className={cn("grid gap-3 border-t border-warning/20 p-4", compact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4 lg:grid-cols-6")}>
           {photos.map((p) => (
             <li key={p.name} className="flex flex-col gap-1.5">
-              <span className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
+              <span className="flex aspect-square items-center justify-center overflow-hidden bg-muted">
                 {p.url ? (
                   // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
                   <img src={p.url} alt={p.name} loading="lazy" className="size-full object-cover" />

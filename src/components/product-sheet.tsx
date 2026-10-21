@@ -64,7 +64,7 @@ function Body({ product }: { product: Product }) {
 
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5">
         {product.review_reason ? (
-          <div className={cn("flex gap-2 rounded-lg border px-3 py-2.5 text-sm", failed ? "border-error/30 bg-error/10" : "border-warning/30 bg-warning/10")}>
+          <div className={cn("flex gap-2 border px-3 py-2.5 text-sm", failed ? "border-error/30 bg-error/10" : "border-warning/30 bg-warning/10")}>
             <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", failed ? "text-error" : "text-warning")} />
             {product.review_reason}
           </div>
@@ -73,7 +73,7 @@ function Body({ product }: { product: Product }) {
         {!failed ? (
           <>
             <Section title="Variants">
-              <ul className="divide-y rounded-lg border text-sm">
+              <ul className="divide-y border text-sm">
                 {product.variants.map((v) => (
                   <li key={v.sku} className="flex items-center gap-3 px-3 py-2">
                     <span className="min-w-0 flex-1 truncate">

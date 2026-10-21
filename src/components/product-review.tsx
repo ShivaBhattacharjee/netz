@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangle, Check, ImageOff, Undo2 } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, ImagePlus, Undo2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,9 +17,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/data/api";
 import { actions, useProduct } from "@/lib/data/store";
 import { formatDuration, formatNumber, formatUsd } from "@/lib/format";
 import type { FieldTranslation, Product, TranslatableField, TranslatedLocale } from "@/lib/types";
@@ -78,19 +81,113 @@ function SourcePanel({ product, highlight }: { product: Product; highlight: numb
           </tbody>
         </table>
       </div>
-      <div className="flex gap-2 overflow-x-auto border-t p-4">
-        {product.photos.length ? (
-          product.photos.map((p) => (
-            // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
-            <img key={p} src={p} alt="" loading="lazy" className="size-24 shrink-0 rounded-md bg-muted object-cover" />
-          ))
-        ) : (
-          <span className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ImageOff className="size-4" /> No matched photos
-          </span>
-        )}
-      </div>
+      <PhotoGallery product={product} />
     </Card>
+  );
+}
+
+function PhotoGallery({ product }: { product: Product }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const current = preview === null ? null : product.photos[preview] ?? null;
+  const useCompactAddButton = product.photos.length > 8;
+
+  async function addImages(files: FileList | null) {
+    if (!files?.length) return;
+    setUploading(true);
+    let added = 0;
+    try {
+      for (const file of Array.from(files)) {
+        const { id } = await api<{ id: string }>("/api/uploads?kind=photo", {
+          method: "POST",
+          headers: { "x-file-name": encodeURIComponent(file.name) },
+          body: file,
+        });
+        if (!(await actions.edit(product.id, { kind: "photo", upload_id: id }))) break;
+        added += 1;
+      }
+      if (added) toast.success(`Added ${added} image${added === 1 ? "" : "s"}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not add images");
+    } finally {
+      setUploading(false);
+      if (input.current) input.current.value = "";
+    }
+  }
+
+  return (
+    <>
+      <div className="border-t p-4">
+        {useCompactAddButton ? (
+          <div className="mb-3 flex justify-end">
+            <Button variant="outline" size="sm" disabled={uploading} onClick={() => input.current?.click()}>
+              <ImagePlus data-icon="inline-start" /> {uploading ? "Adding images…" : "Add images"}
+            </Button>
+          </div>
+        ) : null}
+        <div className="grid max-h-80 grid-cols-[repeat(auto-fill,6rem)] gap-2 overflow-y-auto overflow-x-hidden pr-1">
+          {product.photos.map((photo, index) => (
+            <button
+              key={photo}
+              type="button"
+              aria-label={`Preview image ${index + 1}`}
+              onClick={() => setPreview(index)}
+              className="plain-button size-24 shrink-0 overflow-hidden border bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route */}
+              <img src={photo} alt="" loading="lazy" className="size-full object-cover" />
+            </button>
+          ))}
+          {!useCompactAddButton ? (
+            <Button variant="outline" size="sm" disabled={uploading} onClick={() => input.current?.click()} className="size-24 flex-col gap-2 px-2 text-xs">
+              <ImagePlus className="size-5" />
+              <span className="whitespace-nowrap">{uploading ? "Adding images…" : "Add images"}</span>
+            </Button>
+          ) : null}
+        </div>
+      </div>
+      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic" multiple hidden onChange={(e) => void addImages(e.target.files)} />
+      <Dialog open={preview !== null} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogContent className="sm:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Product images</DialogTitle>
+            <DialogDescription>{product.photos.length} image{product.photos.length === 1 ? "" : "s"}</DialogDescription>
+          </DialogHeader>
+          <div className="relative flex min-h-64 items-center justify-center bg-muted/30 p-2 sm:min-h-[60vh]">
+            {current ? (
+              // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
+              <img src={current} alt={`${product.title}, ${preview === null ? 1 : preview + 1}`} className="max-h-[60vh] max-w-full object-contain" />
+            ) : null}
+            {product.photos.length > 1 ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Previous image"
+                  disabled={preview === null || preview <= 0}
+                  onClick={() => setPreview((index) => (index === null ? null : Math.max(0, index - 1)))}
+                  className="absolute left-3 top-1/2 -translate-y-1/2"
+                >
+                  <ChevronLeft />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Next image"
+                  disabled={preview === null || preview >= product.photos.length - 1}
+                  onClick={() => setPreview((index) => (index === null ? null : Math.min(product.photos.length - 1, index + 1)))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <ChevronRight />
+                </Button>
+              </>
+            ) : null}
+          </div>
+          <div className="text-xs tabular-nums text-muted-foreground">{preview === null ? "" : `${preview + 1} of ${product.photos.length}`}</div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -248,7 +345,7 @@ function SeoFields({ product }: { product: Product }) {
   return (
     <div className="flex flex-col gap-4">
       <Tabs value={locale} onValueChange={(v) => switchTo(v as Locale)}>
-        <TabsList>
+        <TabsList variant="line">
           <TabsTrigger value="en">English</TabsTrigger>
           <TabsTrigger value="de">German</TabsTrigger>
           <TabsTrigger value="fr">French</TabsTrigger>
@@ -277,7 +374,7 @@ function SeoFields({ product }: { product: Product }) {
           </div>
         );
       })}
-      <div className="flex flex-col gap-0.5 rounded-lg border bg-muted/30 p-3">
+      <div className="flex flex-col gap-0.5 border bg-muted/30 p-3">
         <span className="text-xs text-muted-foreground">
           {host} › products › {product.handle}
         </span>
@@ -298,7 +395,7 @@ function ResultPanel({ product, onClaim }: { product: Product; onClaim: (row: nu
     <Card className="gap-0 py-0">
       <Tabs defaultValue="details" className="gap-0">
         <div className="flex items-center justify-between gap-2 overflow-x-auto border-b px-3 py-2">
-          <TabsList>
+          <TabsList variant="line">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="variants">Variants {product.variants.length}</TabsTrigger>
             <TabsTrigger value="claims">Claims {product.claims.length}</TabsTrigger>
@@ -323,7 +420,7 @@ function ResultPanel({ product, onClaim }: { product: Product; onClaim: (row: nu
           <Field label="Category" score={c.category} manual={isManual("category")}>
             <Input defaultValue={product.category} onBlur={(e) => actions.editField(product.id, "category", e.target.value)} />
           </Field>
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-hidden border">
             <table className="w-full text-sm">
               <tbody>
                 <tr className="border-b">
@@ -365,7 +462,7 @@ function ResultPanel({ product, onClaim }: { product: Product; onClaim: (row: nu
         </TabsContent>
 
         <TabsContent value="variants" className="p-4">
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-hidden border">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b">
@@ -387,7 +484,7 @@ function ResultPanel({ product, onClaim }: { product: Product; onClaim: (row: nu
 
         <TabsContent value="claims" className="p-4">
           {product.claims.length ? (
-            <ul className="divide-y overflow-hidden rounded-md border">
+            <ul className="divide-y overflow-hidden border">
               {product.claims.map((claim) => {
                 const row = Number(claim.source.match(/row (\d+)/)?.[1]);
                 return (
@@ -501,7 +598,7 @@ export function ProductReview({ id }: { id: string }) {
       {product.review_reason ? (
         <div
           className={cn(
-            "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+            "flex items-center gap-2 border px-3 py-2 text-sm",
             product.status === "failed" ? "border-error/30 bg-error/10" : "border-warning/30 bg-warning/10",
           )}
         >

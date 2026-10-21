@@ -30,7 +30,7 @@ export function ImportQueue() {
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border">
+      <div className="overflow-hidden border">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[880px] table-fixed text-sm">
             <caption className="sr-only">Imports, newest first. Select a row for details.</caption>

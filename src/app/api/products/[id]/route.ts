@@ -15,6 +15,7 @@ const editSchema = z.discriminatedUnion("kind", [
     weight_grams: z.number().int().min(1).max(1_000_000).nullable(),
   }),
   z.object({ kind: z.literal("tags"), tags: z.array(z.string().trim().max(40)).max(20) }),
+  z.object({ kind: z.literal("photo"), upload_id: z.string().min(1).max(100) }),
   z.object({ kind: z.literal("attribute"), key: z.string().trim().min(1).max(40).regex(/^[a-z0-9_]+$/), value: z.string().max(200) }),
   z.object({ kind: z.literal("seo"), locale: z.enum(["en", "de", "fr"]), field: z.enum(["meta_title", "meta_description"]), value: z.string().trim().max(300) }),
 ]);
