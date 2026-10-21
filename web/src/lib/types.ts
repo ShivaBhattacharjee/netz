@@ -91,7 +91,7 @@ export interface ImportJob {
   resume_in_seconds: number | null;
   error: string | null;
   created_at: string;
-  unmatched_photos: string[];
+  unmatched_photos: { name: string; url: string | null }[];
   cost_micros: number;
 }
 

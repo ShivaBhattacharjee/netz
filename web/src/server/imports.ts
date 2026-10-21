@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { importGroup, importJob, product, sourceRow, store, upload } from "@/db/schema";
+import { importGroup, importJob, photo, product, sourceRow, store, upload } from "@/db/schema";
 import type { ImportJob, ImportRow } from "@/lib/types";
 import { newId } from "./ids";
 import { log } from "./log";
@@ -17,7 +17,23 @@ export const createImportSchema = z.object({
 
 export class ImportInputError extends Error {}
 
-function toImportJob(row: typeof importJob.$inferSelect): ImportJob {
+async function unmatchedPhotoUrls(importIds: string[]) {
+  if (importIds.length === 0) return new Map<string, Map<string, string>>();
+  const rows = await db
+    .select({ id: photo.id, importId: photo.importId, fileName: photo.fileName })
+    .from(photo)
+    .where(and(inArray(photo.importId, importIds), eq(photo.status, "unmatched")));
+  const byImport = new Map<string, Map<string, string>>();
+  for (const r of rows) {
+    if (!r.importId) continue;
+    const map = byImport.get(r.importId) ?? new Map<string, string>();
+    map.set(r.fileName, `/api/photos/${r.id}`);
+    byImport.set(r.importId, map);
+  }
+  return byImport;
+}
+
+function toImportJob(row: typeof importJob.$inferSelect, urls?: Map<string, string>): ImportJob {
   const resume = row.status === "paused" && row.pausedUntil ? Math.max(0, Math.ceil((row.pausedUntil.getTime() - Date.now()) / 1000)) : null;
   return {
     id: row.id,
@@ -31,7 +47,7 @@ function toImportJob(row: typeof importJob.$inferSelect): ImportJob {
     resume_in_seconds: resume,
     error: row.error,
     created_at: row.createdAt.toISOString(),
-    unmatched_photos: row.unmatchedPhotos,
+    unmatched_photos: row.unmatchedPhotos.map((name) => ({ name, url: urls?.get(name) ?? null })),
     cost_micros: row.costMicros,
   };
 }
@@ -72,7 +88,8 @@ export async function createImport(storeId: string, userId: string | null, input
 
 export async function listImports(storeId: string, limit = 50) {
   const rows = await db.select().from(importJob).where(eq(importJob.storeId, storeId)).orderBy(desc(importJob.createdAt)).limit(limit);
-  return rows.map(toImportJob);
+  const urls = await unmatchedPhotoUrls(rows.filter((r) => r.unmatchedPhotos.length).map((r) => r.id));
+  return rows.map((r) => toImportJob(r, urls.get(r.id)));
 }
 
 export async function getImport(
@@ -93,7 +110,8 @@ export async function getImport(
     const n = r.normalized as { sku?: string | null; title?: string };
     return { row: r.rowNumber, sku: n.sku ?? "", title: n.title ?? "", status: r.status, product_id: r.productId, reason: r.reason };
   });
-  return { import: toImportJob(row), rows: items };
+  const urls = await unmatchedPhotoUrls([row.id]);
+  return { import: toImportJob(row, urls.get(row.id)), rows: items };
 }
 
 async function ownedImport(storeId: string, importId: string) {
