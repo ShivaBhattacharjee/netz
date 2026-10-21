@@ -1,4 +1,4 @@
-"""Stand-in for the Anthropic API that fails on purpose, for the manual AI-failure test cases in TEST-CASES.md.
+"""Stand-in for the Anthropic API that fails on purpose, to check AI failure handling (EDGE-CASES.md section 2) against a running worker.
 
 Run:    MODE=429 python3 scripts/fake-anthropic.py
 Worker: ANTHROPIC_API_KEY=sk-ant-fake ANTHROPIC_BASE_URL=http://127.0.0.1:9999 pnpm worker

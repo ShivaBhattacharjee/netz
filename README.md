@@ -34,11 +34,11 @@ Browser ──► Next.js API routes ──► Postgres (source of truth)
 5. **Translate**: title, description, SEO and attribute values go to German and French, one call per language, with brand names, placeholders and measurements protected. Manual fixes are never overwritten.
 6. **Review and publish**: approve products in bulk or one by one. Approved products show on `/store`, 24 per page.
 
-Every stage writes its result before the next one runs, jobs are idempotent, and a reconciler re-queues unfinished work, so restarts and re-uploads never repeat paid AI calls. Each import gets an AI budget and pauses when it is reached. [EDGE-CASES.md](EDGE-CASES.md) lists every failure case and how it is handled, [TEST-CASES.md](TEST-CASES.md) has a manual test for each one with recorded results, and [SCOPE.md](SCOPE.md) has the scope and architecture notes.
+Every stage writes its result before the next one runs, jobs are idempotent, and a reconciler re-queues unfinished work, so restarts and re-uploads never repeat paid AI calls. Each import gets an AI budget and pauses when it is reached. [EDGE-CASES.md](EDGE-CASES.md) lists every failure case, how it is handled and whether `pnpm test` covers it; [SCOPE.md](SCOPE.md) has the scope and architecture notes.
 
 ## Test data
 
-`evals/` holds the sample sheets and photos used for testing and for the `/evaluations` page: `small`, `medium` and `large` labelled sets, the `final` 1 / 100 / 1,000 / 10,000-row sets, and `edge` files for the failure cases (bad encodings, formula injection, a renamed PDF, a ZIP bomb, too many rows). Each set has a README and `labels.json` with the expected products. Photo folders for the bigger sets are not committed; their `photos.zip` is. `scripts/generate_evals.py` recreates everything deterministically (`pip install pillow openpyxl`). `scripts/fake-anthropic.py` stands in for the Anthropic API and fails on purpose, for the AI-failure test cases.
+`evals/` holds the sample sheets and photos used for testing and for the `/evaluations` page: `small`, `medium` and `large` labelled sets, the `final` 1 / 100 / 1,000 / 10,000-row sets, and `edge` files for the failure cases (bad encodings, formula injection, a renamed PDF, a ZIP bomb, too many rows). Each set has a README and `labels.json` with the expected products. Photo folders for the bigger sets are not committed; their `photos.zip` is. `scripts/generate_evals.py` recreates everything deterministically (`pip install pillow openpyxl`). `scripts/fake-anthropic.py` stands in for the Anthropic API and fails on purpose (rate limit, outage, timeout, invalid JSON, refusal, cut-off output, bad key), to check the cases in section 2 of EDGE-CASES.md against a running worker.
 
 ## Getting started
 

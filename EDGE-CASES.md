@@ -5,11 +5,9 @@ Written before the implementation and kept up to date while building.
 
 Status values:
 
-- **Handled + tested**: behaviour implemented and checked by running its test case in [TEST-CASES.md](TEST-CASES.md), with the result recorded there.
-- **Handled, not tested**: behaviour implemented; the test case is written but has not been run yet.
+- **Handled + tested**: behaviour implemented and covered by an automated test in `tests/` (run with `pnpm test`). Each test name ends with the case number it covers, e.g. "(1.26)".
+- **Handled, not tested**: behaviour implemented, but checking it needs the running app (queue, database, AI provider or browser) and there is no automated test for it yet.
 - **Not handled**: out of scope, with the reason.
-
-Test case `T1.7` in TEST-CASES.md tests edge case 1.7, and so on for every row.
 
 Stack these cases are written against: Next.js (app + API routes), Postgres via Drizzle, Better Auth (Google), Redis + BullMQ for the import queue, Anthropic Claude Haiku 5.5 for clean rows and translation (`AI_MODEL_FAST`, `AI_MODEL_TRANSLATE`) and Claude Sonnet 5.5 for messy rows and photos (`AI_MODEL_STRONG`).
 
@@ -29,7 +27,7 @@ Auth, stores, the import pipeline (upload → parse → clean → group → phot
 | 1.6 | Header row is not the first row, or headers are in German (`Preis`, `Farbe`) | Header detection scans the first 20 rows; a synonym map covers EN/DE/FR column names. Unknown columns are kept as raw attributes, never dropped. | Handled + tested |
 | 1.7 | Prices like `1.299,00 €`, `12.5`, `£8`, `EUR 9`, `9,-`, `CA$ 12`, `A$5` | Parsed to integer cents + ISO currency (`CA$` → CAD, `A$` → AUD, also NZD, HKD, SGD; a bare `$` is USD). Decimal separator inferred per value, then checked against the sheet's dominant locale. Never stored as a float. | Handled + tested |
 | 1.8 | Price missing or `0` | Variant gets no price; product goes to **Needs review** with "No price for {variant}". Never invented. | Handled + tested |
-| 1.9 | Price with no currency symbol | Uses the sheet-level default currency chosen at upload; the row records that a default was applied. | Handled, not tested |
+| 1.9 | Price with no currency symbol | Uses the sheet-level default currency chosen at upload; the row records that a default was applied. | Handled + tested |
 | 1.10 | Mixed units (`20cm`, `8 in`, `1.8kg`, `4 lbs`) | Normalised to cm and grams as integers. Original value kept on the source row for the review screen. | Handled + tested |
 | 1.11 | Colour typos (`terracota`, `antrazit`) | Fuzzy match against an EN/DE/FR colour vocabulary (edit distance with transpositions, ≤ 1 for short words, ≤ 2 otherwise). The fix is recorded on the row. Unknown colours are kept as written, never dropped. | Handled + tested |
 | 1.12 | Same product split across rows (one row per size/colour) | Grouped by parent SKU column if there is one, else by the SKU with trailing size/colour segments removed (`TC-PL-20` → `TC-PL`), else by normalised title + brand. Each row becomes a variant. `source_rows` lists every row used. | Handled + tested |
