@@ -2,14 +2,14 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/format";
 import { requireStore } from "@/lib/auth/session";
 import { countryFor, localized, storeStrings } from "@/lib/locale";
-import { listPublished } from "@/server/products";
+import { cachedPublished } from "@/server/storefront";
 import { PhotoTile, StoreChrome } from "@/components/store-chrome";
 
 export default async function CollectionPage({ searchParams }: { searchParams: Promise<{ country?: string }> }) {
   const country = countryFor((await searchParams).country);
   const t = storeStrings[country.locale];
   const { active } = await requireStore();
-  const products = await listPublished(active.id);
+  const products = await cachedPublished(active.id);
 
   return (
     <StoreChrome country={country} storeName={active.name}>

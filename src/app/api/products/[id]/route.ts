@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { body, withStore } from "@/server/http";
 import { editProduct, getProduct } from "@/server/products";
+import { invalidateStorefront } from "@/server/storefront";
 
 const editSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("field"), field: z.enum(["title", "description_html", "category"]), value: z.string().trim().min(1).max(10_000) }),
@@ -26,5 +27,6 @@ export const GET = withStore<{ id: string }>(async (ctx, _request, { id }) => {
 
 export const PATCH = withStore<{ id: string }>(async (ctx, request, { id }) => {
   await editProduct(ctx.store.id, id, await body(request, editSchema));
+  invalidateStorefront(ctx.store.id);
   return NextResponse.json({ product: await getProduct(ctx.store.id, id) });
 });

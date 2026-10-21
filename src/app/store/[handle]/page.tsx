@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStore } from "@/lib/auth/session";
 import { countryFor, localized, storeStrings } from "@/lib/locale";
-import { getPublishedByHandle } from "@/server/products";
+import { cachedPublishedByHandle } from "@/server/storefront";
 import { PhotoTile, StoreChrome } from "@/components/store-chrome";
 import { VariantPicker } from "@/components/variant-picker";
 
@@ -16,7 +16,7 @@ export default async function StoreProductPage({
   const { handle } = await params;
   const country = countryFor((await searchParams).country);
   const { active } = await requireStore();
-  const product = await getPublishedByHandle(active.id, handle);
+  const product = await cachedPublishedByHandle(active.id, handle);
   if (!product) notFound();
 
   const t = storeStrings[country.locale];
