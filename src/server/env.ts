@@ -24,7 +24,7 @@ const schema = z
     AI_MODE: z.enum(["anthropic", "mock"]).optional(),
     ANTHROPIC_API_KEY: z.string().default(""),
     AI_MODEL_FAST: z.string().min(1).default("claude-haiku-5-5"),
-    AI_MODEL_STRONG: z.string().min(1).default("claude-haiku-5-5"),
+    AI_MODEL_STRONG: z.string().min(1).default("claude-sonnet-5-5"),
     AI_MODEL_TRANSLATE: z.string().min(1).default("claude-haiku-5-5"),
     AI_RPM: z.coerce.number().int().positive().optional(),
     AI_BUDGET_MULTIPLIER: z.coerce.number().positive().default(3),
