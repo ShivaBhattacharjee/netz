@@ -159,3 +159,15 @@ tests/            Vitest suite (pnpm test)
 evals/            sample sheets, photos and labels for testing
 scripts/          eval generator, fake Anthropic API for failure tests
 ```
+## Screenshots
+
+<img width="1512" height="882" alt="image" src="https://github.com/user-attachments/assets/e54b0c95-5977-4959-9932-f30a25964eb0" />
+<img width="1491" height="887" alt="image" src="https://github.com/user-attachments/assets/29ec2280-8b93-4b57-a4df-b1640c4d9168" />
+<img width="1508" height="889" alt="image" src="https://github.com/user-attachments/assets/23e3180c-b187-4a57-8d3e-3250a7692aa9" />
+<img width="1511" height="887" alt="image" src="https://github.com/user-attachments/assets/f77e80bb-1bd6-4cba-8008-5115b1374501" />
+<img width="1506" height="886" alt="image" src="https://github.com/user-attachments/assets/0883a061-571b-411f-a7a4-a5aeadf767d6" />
+<img width="1508" height="895" alt="image" src="https://github.com/user-attachments/assets/0a34b3f0-b876-403f-bfdb-8e1a4b04ea8a" />
+<img width="1507" height="855" alt="image" src="https://github.com/user-attachments/assets/02966ad7-b656-4377-8ed6-96d2021e0f81" />
+<img width="1512" height="898" alt="image" src="https://github.com/user-attachments/assets/12af9393-bef8-4a15-99ac-40a635b46ae3" />
+<img width="1511" height="900" alt="image" src="https://github.com/user-attachments/assets/691d5140-2619-4106-8114-f881ef9d6276" />
+
