@@ -5,7 +5,7 @@ import { UploadButton } from "@/components/upload-dialog";
 export default function ImportsPage() {
   return (
     <>
-      <PageHeader title="Imports" meta="Supplier sheets and photos, processed in the background" actions={<UploadButton />} />
+      <PageHeader title="Imports" meta="Supplier sheets and photos, processed in the background" actions={<UploadButton pageDrop />} />
       <ImportQueue />
     </>
   );

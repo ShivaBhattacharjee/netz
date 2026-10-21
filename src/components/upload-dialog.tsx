@@ -2,7 +2,7 @@
 
 import { FileSpreadsheet, Images, Plus, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { api } from "@/lib/data/api";
@@ -56,7 +56,7 @@ async function uploadAll(files: { file: File; kind: Kind }[], onDone: () => void
   return ids;
 }
 
-export function UploadButton({ label = "Upload", size }: { label?: string; size?: "default" | "lg" }) {
+export function UploadButton({ label = "Upload", size, pageDrop = false }: { label?: string; size?: "default" | "lg"; pageDrop?: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -97,6 +97,31 @@ export function UploadButton({ label = "Upload", size }: { label?: string; size?
     setStaged(next);
     setErrors(problems);
   }
+
+  const addLatest = useRef(addFiles);
+  useEffect(() => {
+    addLatest.current = addFiles;
+  });
+
+  useEffect(() => {
+    if (!pageDrop || starting) return;
+    const hasFiles = (e: DragEvent) => e.dataTransfer?.types.includes("Files") ?? false;
+    const onDragOver = (e: DragEvent) => {
+      if (hasFiles(e)) e.preventDefault();
+    };
+    const onDrop = (e: DragEvent) => {
+      if (e.defaultPrevented || !hasFiles(e) || !e.dataTransfer?.files.length) return;
+      e.preventDefault();
+      addLatest.current(e.dataTransfer.files);
+      setOpen(true);
+    };
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [pageDrop, starting]);
 
   function reset() {
     setStaged(empty);
