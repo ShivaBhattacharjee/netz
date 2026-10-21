@@ -25,7 +25,7 @@ const fieldOptions = [
 
 export function RerunDialog({ ids, onDone, trigger }: { ids: string[]; onDone?: () => void; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [model, setModel] = useState<string>(RERUN_MODELS[1].id);
+  const [model, setModel] = useState<string>(RERUN_MODELS[0].id);
   const [busy, setBusy] = useState(false);
   const [fields, setFields] = useState<string[]>(["title", "description_html", "category", "attributes", "claims"]);
   const [note, setNote] = useState("");

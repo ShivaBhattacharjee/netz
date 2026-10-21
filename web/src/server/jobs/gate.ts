@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { importJob } from "@/db/schema";
-import type { AiError } from "../ai/gemini";
+import type { AiError } from "../ai/anthropic";
 import { log } from "../log";
 import { redis } from "../redis";
 

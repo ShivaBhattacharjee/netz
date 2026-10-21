@@ -57,7 +57,7 @@ const workers = selected.map((name) => {
   return worker;
 });
 
-log.info("worker started", { queues: selected, aiMode: config.AI_MODE, models: { fast: config.GEMINI_MODEL_FAST, strong: config.GEMINI_MODEL_STRONG, translate: config.GEMINI_MODEL_TRANSLATE } });
+log.info("worker started", { queues: selected, aiMode: config.AI_MODE, models: { fast: config.AI_MODEL_FAST, strong: config.AI_MODEL_STRONG, translate: config.AI_MODEL_TRANSLATE } });
 
 const runReconcile = () => reconcile().catch((error) => log.error("reconcile failed", { error: (error as Error).message }));
 void runReconcile();

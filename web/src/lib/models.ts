@@ -1,4 +1,4 @@
 export const RERUN_MODELS = [
-  { id: "gemini-flash-lite-latest", label: "Gemini Flash-Lite (latest)", hint: "Fast, lowest cost, free tier", tier: "cheap" },
-  { id: "gemini-flash-latest", label: "Gemini Flash (latest)", hint: "Messy rows and photos, free tier", tier: "strong" },
+  { id: "claude-haiku-5-5", label: "Claude Haiku 5.5", hint: "Fast, lowest cost", tier: "cheap" },
+  { id: "claude-sonnet-5-5", label: "Claude Sonnet 5.5", hint: "Messy rows and photos", tier: "strong" },
 ] as const;

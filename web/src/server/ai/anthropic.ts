@@ -1,4 +1,6 @@
-import { ApiError, GoogleGenAI, type Part, ThinkingLevel } from "@google/genai";
+import Anthropic, { APIConnectionError, APIConnectionTimeoutError, APIError } from "@anthropic-ai/sdk";
+import { transformJSONSchema } from "@anthropic-ai/sdk/lib/transform-json-schema";
+import type { ContentBlockParam, OutputConfig } from "@anthropic-ai/sdk/resources/messages";
 
 export type AiErrorKind =
   | "rate_limit"
@@ -35,11 +37,10 @@ export interface Usage {
 export interface GenerateRequest {
   model: string;
   system: string;
-  parts: Part[];
-  jsonSchema: unknown;
-  temperature?: number;
+  content: ContentBlockParam[];
+  jsonSchema: Record<string, unknown>;
   maxOutputTokens?: number;
-  thinking?: "minimal" | "low" | "medium" | "high";
+  effort?: NonNullable<OutputConfig["effort"]>;
   timeoutMs?: number;
 }
 
@@ -49,46 +50,34 @@ export interface GenerateResult {
   latencyMs: number;
 }
 
-const THINKING: Record<NonNullable<GenerateRequest["thinking"]>, ThinkingLevel> = {
-  minimal: ThinkingLevel.MINIMAL,
-  low: ThinkingLevel.LOW,
-  medium: ThinkingLevel.MEDIUM,
-  high: ThinkingLevel.HIGH,
-};
+let client: Anthropic | undefined;
 
-const BLOCKED_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "LANGUAGE"]);
-
-let client: GoogleGenAI | undefined;
-
-function genai() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new AiError("auth", "GEMINI_API_KEY is not set");
-  client ??= new GoogleGenAI({ apiKey });
+function anthropic() {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new AiError("auth", "ANTHROPIC_API_KEY is not set");
+  client ??= new Anthropic({ apiKey, maxRetries: 0 });
   return client;
 }
 
-function retryDelayMs(message: string): number | undefined {
-  const m = message.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/) ?? message.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
-  return m ? Math.ceil(Number(m[1]) * 1000) : undefined;
+function retryAfterMs(headers: Headers | undefined): number | undefined {
+  const value = Number(headers?.get("retry-after"));
+  return Number.isFinite(value) && value > 0 ? Math.ceil(value * 1000) : undefined;
 }
 
 export function classify(error: unknown): AiError {
   if (error instanceof AiError) return error;
-  if (error instanceof ApiError) {
+  if (error instanceof APIConnectionTimeoutError) return new AiError("timeout", "AI request timed out");
+  if (error instanceof APIConnectionError) return new AiError("unavailable", "Network error talking to the AI provider");
+  if (error instanceof APIError && error.status !== undefined) {
     const message = error.message ?? "";
-    if (error.status === 402 || /prepayment credits|billing/i.test(message)) {
-      return new AiError("billing", "Gemini credits are used up or billing is not set up for this key's project");
+    if (error.status === 402 || /credit balance|billing|usage limits/i.test(message)) {
+      return new AiError("billing", "Anthropic credits are used up or the workspace hit its spend limit");
     }
-    if (error.status === 429) {
-      const daily = /PerDay|per day|daily/i.test(message);
-      return new AiError(daily ? "quota_daily" : "rate_limit", daily ? "Daily AI quota reached" : "AI rate limit reached", retryDelayMs(message));
-    }
-    if (error.status === 401 || error.status === 403 || /API_KEY_INVALID|API key not valid|PERMISSION_DENIED/i.test(message)) {
-      return new AiError("auth", "AI key is invalid or has no access to this model");
-    }
+    if (error.status === 429) return new AiError("rate_limit", "AI rate limit reached", retryAfterMs(error.headers));
+    if (error.status === 401 || error.status === 403) return new AiError("auth", "AI key is invalid or has no access to this model");
     if (error.status === 404) return new AiError("bad_request", `Model not found: ${message.slice(0, 200)}`);
     if (error.status === 408 || error.status === 504) return new AiError("timeout", "AI request timed out");
-    if (error.status >= 500) return new AiError("unavailable", `AI provider error ${error.status}`);
+    if (error.status >= 500) return new AiError("unavailable", `AI provider error ${error.status}`, retryAfterMs(error.headers));
     return new AiError("bad_request", `AI request rejected (${error.status}): ${message.slice(0, 300)}`);
   }
   const e = error as { name?: string; message?: string; code?: string };
@@ -105,38 +94,36 @@ export async function generateJson(req: GenerateRequest): Promise<GenerateResult
   const started = Date.now();
   let response;
   try {
-    response = await genai().models.generateContent({
-      model: req.model,
-      contents: [{ role: "user", parts: req.parts }],
-      config: {
-        systemInstruction: req.system,
-        responseMimeType: "application/json",
-        responseJsonSchema: req.jsonSchema,
-        temperature: req.temperature ?? 0.2,
-        maxOutputTokens: req.maxOutputTokens ?? 4096,
-        thinkingConfig: { thinkingLevel: THINKING[req.thinking ?? "low"] },
-        httpOptions: { timeout: req.timeoutMs ?? 60_000 },
+    response = await anthropic().messages.create(
+      {
+        model: req.model,
+        system: req.system,
+        messages: [{ role: "user", content: req.content }],
+        max_tokens: req.maxOutputTokens ?? 4096,
+        output_config: { effort: req.effort ?? "low", format: { type: "json_schema", schema: req.jsonSchema } },
       },
-    });
+      { timeout: req.timeoutMs ?? 60_000 },
+    );
   } catch (error) {
     throw classify(error);
   }
 
   const latencyMs = Date.now() - started;
-  const meta = response.usageMetadata;
   const usage: Usage = {
-    inputTokens: meta?.promptTokenCount ?? 0,
-    outputTokens: (meta?.candidatesTokenCount ?? 0) + (meta?.thoughtsTokenCount ?? 0),
+    inputTokens: response.usage.input_tokens + (response.usage.cache_creation_input_tokens ?? 0) + (response.usage.cache_read_input_tokens ?? 0),
+    outputTokens: response.usage.output_tokens,
   };
 
-  const blockReason = response.promptFeedback?.blockReason;
-  if (blockReason) throw Object.assign(new AiError("blocked", `Model declined the input (${blockReason})`), { usage, latencyMs });
+  switch (response.stop_reason) {
+    case "refusal":
+      throw Object.assign(new AiError("blocked", "Model declined to generate (refusal)"), { usage, latencyMs });
+    case "max_tokens":
+      throw Object.assign(new AiError("truncated", "Model output was cut off"), { usage, latencyMs });
+    case "model_context_window_exceeded":
+      throw Object.assign(new AiError("bad_request", "Input is too large for the model's context window"), { usage, latencyMs });
+  }
 
-  const finish = response.candidates?.[0]?.finishReason;
-  if (finish && BLOCKED_FINISH.has(finish)) throw Object.assign(new AiError("blocked", `Model declined to generate (${finish})`), { usage, latencyMs });
-  if (finish === "MAX_TOKENS") throw Object.assign(new AiError("truncated", "Model output was cut off"), { usage, latencyMs });
-
-  const text = response.text;
+  const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
   if (!text) throw Object.assign(new AiError("invalid_output", "Model returned no text"), { usage, latencyMs });
   return { text, usage, latencyMs };
 }
@@ -149,5 +136,5 @@ export function usageOf(error: unknown): { usage: Usage; latencyMs: number } | n
 export function toResponseSchema(schema: Record<string, unknown>) {
   const copy = { ...schema };
   delete copy.$schema;
-  return copy;
+  return transformJSONSchema(copy);
 }

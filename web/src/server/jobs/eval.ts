@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { evalRun, type FieldScores } from "@/db/schema";
 import { type AiCallRecord, type BuiltProduct, finalizeBuild, generateBuild } from "../ai/build";
-import { classify } from "../ai/gemini";
+import { classify } from "../ai/anthropic";
 import { mockBuild } from "../ai/mock";
 import { costMicros } from "../ai/pricing";
 import { env } from "../env";

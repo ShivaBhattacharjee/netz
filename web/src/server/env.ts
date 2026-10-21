@@ -3,19 +3,19 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
-  AI_MODE: z.enum(["gemini", "mock"]).optional(),
-  GEMINI_API_KEY: z.string().default(""),
-  GEMINI_MODEL_FAST: z.string().min(1),
-  GEMINI_MODEL_STRONG: z.string().min(1),
-  GEMINI_MODEL_TRANSLATE: z.string().min(1),
+  AI_MODE: z.enum(["anthropic", "mock"]).optional(),
+  ANTHROPIC_API_KEY: z.string().default(""),
+  AI_MODEL_FAST: z.string().min(1).default("claude-haiku-5-5"),
+  AI_MODEL_STRONG: z.string().min(1).default("claude-haiku-5-5"),
+  AI_MODEL_TRANSLATE: z.string().min(1).default("claude-haiku-5-5"),
   STORAGE_DIR: z.string().default(".data/uploads"),
   AI_RPM: z.coerce.number().int().positive().optional(),
   MOCK_LATENCY_MS: z.coerce.number().int().min(0).default(0),
 })
-  .transform((e) => ({ ...e, AI_MODE: e.AI_MODE ?? (e.GEMINI_API_KEY ? "gemini" : "mock") }))
-  .refine((e) => e.AI_MODE === "mock" || e.GEMINI_API_KEY.length > 0, {
-    path: ["GEMINI_API_KEY"],
-    message: "AI_MODE=gemini needs GEMINI_API_KEY",
+  .transform((e) => ({ ...e, AI_MODE: e.AI_MODE ?? (e.ANTHROPIC_API_KEY ? "anthropic" : "mock") }))
+  .refine((e) => e.AI_MODE === "mock" || e.ANTHROPIC_API_KEY.length > 0, {
+    path: ["ANTHROPIC_API_KEY"],
+    message: "AI_MODE=anthropic needs ANTHROPIC_API_KEY",
   });
 
 export type Env = z.infer<typeof schema>;

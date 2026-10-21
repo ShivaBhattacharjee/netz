@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AiError, generateJson, toResponseSchema, type Usage, usageOf } from "./gemini";
+import { AiError, generateJson, toResponseSchema, type Usage, usageOf } from "./anthropic";
 import { loadPrompt, render } from "./prompts";
 
 export type TranslateLocale = "de" | "fr";
@@ -54,10 +54,9 @@ export async function translateFields(model: string, locale: TranslateLocale, fi
     result = await generateJson({
       model,
       system: render(prompt.system, { ...info, protected: protectedNames.length ? protectedNames.map((n) => `"${n}"`).join(", ") : "(none)" }),
-      parts: [{ text: render(prompt.user, { fields: JSON.stringify(fields, null, 2) }) }],
+      content: [{ type: "text", text: render(prompt.user, { fields: JSON.stringify(fields, null, 2) }) }],
       jsonSchema,
-      thinking: "minimal",
-      temperature: 0.2,
+      effort: "low",
       maxOutputTokens: 4096,
     });
   } catch (error) {

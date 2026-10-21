@@ -11,7 +11,7 @@ export async function storeMetrics(storeId: string, from: Date, to: Date): Promi
   const since = from;
   const until = new Date(to.getTime() + 24 * 3600 * 1000);
   const days = Math.round((until.getTime() - since.getTime()) / (24 * 3600 * 1000));
-  const strongModel = process.env.GEMINI_MODEL_STRONG ?? "gemini-flash-latest";
+  const strongModel = process.env.AI_MODEL_STRONG ?? "claude-haiku-5-5";
   const strong = rateFor(strongModel) ?? { input: 0, output: 0 };
 
   const [statusRows, modelRows, latencyRows, coverageRows, funnelRows, dailyGroups, dailyCost] = await Promise.all([

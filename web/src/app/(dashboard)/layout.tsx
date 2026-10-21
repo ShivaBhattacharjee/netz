@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <AppTopbar />
           {env().AI_MODE === "mock" ? (
             <div role="status" className="border-b border-warning/30 bg-warning/10 px-4 py-2 text-sm md:px-8">
-              Demo mode: products are built without AI. Set GEMINI_API_KEY in .env and restart the app and the worker to use Gemini.
+              Demo mode: products are built without AI. Set ANTHROPIC_API_KEY in .env and restart the app and the worker to use Claude.
             </div>
           ) : null}
           <div id="main" className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 py-6 md:px-8 md:py-8">

@@ -3,7 +3,7 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { aiResult, importGroup, importJob, photo, product, productPhoto, sourceRow, variant } from "@/db/schema";
 import { type AiCallRecord, type BuildOutput, type BuiltProduct, finalizeBuild, generateBuild } from "../ai/build";
-import { classify } from "../ai/gemini";
+import { classify } from "../ai/anthropic";
 import { mockBuild } from "../ai/mock";
 import { loadPrompt } from "../ai/prompts";
 import { env } from "../env";
@@ -131,7 +131,7 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
   if (pause) await rateLimited(worker, pause.until - Date.now(), pause.reason);
 
   const input = group.input as GroupInput;
-  const model = config.AI_MODE === "mock" ? "mock" : group.route === "strong" ? config.GEMINI_MODEL_STRONG : config.GEMINI_MODEL_FAST;
+  const model = config.AI_MODE === "mock" ? "mock" : group.route === "strong" ? config.AI_MODEL_STRONG : config.AI_MODEL_FAST;
   const promptVersion = loadPrompt("build-product").version;
   const cacheKey = sha256(`build|${model}|${promptVersion}|${group.inputHash}`);
 

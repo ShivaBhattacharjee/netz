@@ -43,12 +43,12 @@ Next.js API routes ──► Postgres (Drizzle)
 Redis + BullMQ ──► Worker process (`pnpm worker`, src/worker)
   queues: parse → ai.cheap / ai.strong → translate
   parse: decode → header detect → clean → group → photos → route
-  ai.*:  Gemini build (prompts/build-product.md) → validate → claim check → persist
-  translate: Gemini EN → DE, FR per field (prompts/translate.md)
+  ai.*:  Claude build (prompts/build-product.md) → validate → claim check → persist
+  translate: Claude EN → DE, FR per field (prompts/translate.md)
 Storefront routes ──► Postgres read model (published + translated only), cached
 ```
 
-- Models (env): `GEMINI_MODEL_FAST` gemini-3.1-flash-lite for clean groups, `GEMINI_MODEL_STRONG` gemini-3.8-flash for messy groups and photos, `GEMINI_MODEL_TRANSLATE` gemini-3.5-flash-lite. `AI_MODE=mock` runs the whole pipeline without a key.
+- Models (env): `AI_MODEL_FAST` for clean groups, `AI_MODEL_STRONG` for messy groups and photos, `AI_MODEL_TRANSLATE` for translation; all default to `claude-haiku-5-5`. `AI_MODE=mock` runs the whole pipeline without a key.
 - Worker runs as a separate process so import load never shares the storefront's event loop. `WORKER_QUEUES` and `*_CONCURRENCY` split queues across processes.
 - Every stage writes its result before the next stage runs; jobs are keyed by `(import_id, group_id, stage)` and successful model output is cached in `ai_result` before the product write, so a retry or restart never repeats paid work.
 - A reconciler (on start and every 5 minutes) re-enqueues anything Postgres says is unfinished; Postgres is the source of truth, Redis is the delivery mechanism.

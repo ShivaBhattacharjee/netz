@@ -38,8 +38,8 @@ function NewExperiment({
   const [name, setName] = useState("");
   const [set, setSet] = useState(options.sets[0]?.name ?? "");
   const [limit, setLimit] = useState("25");
-  const [a, setA] = useState<Variant>({ model: "gemini-flash-lite-latest", prompt: firstPrompt });
-  const [b, setB] = useState<Variant>({ model: "gemini-flash-latest", prompt: firstPrompt });
+  const [a, setA] = useState<Variant>({ model: "claude-haiku-5-5", prompt: firstPrompt });
+  const [b, setB] = useState<Variant>({ model: "claude-sonnet-5-5", prompt: firstPrompt });
   const [busy, setBusy] = useState(false);
   const same = a.model === b.model && a.prompt === b.prompt;
 
@@ -68,7 +68,7 @@ function NewExperiment({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-3xl">
         <SheetHeader className="border-b p-5">
           <SheetTitle className="text-lg">New experiment</SheetTitle>
           <SheetDescription>Both variants build the same products from a labelled set, so the comparison is fair. AI calls are billed.</SheetDescription>
@@ -76,12 +76,14 @@ function NewExperiment({
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
           <div className="flex flex-col gap-2">
             <Label htmlFor="exp-name">Name</Label>
-            <Input id="exp-name" placeholder="Flash-Lite vs Flash on messy rows" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+            <Input id="exp-name" placeholder="Haiku vs Sonnet on messy rows" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
           </div>
           <OptionSelect id="exp-set" label="Labelled set" value={set} onChange={setSet} options={setOptions(options)} />
           <OptionSelect id="exp-limit" label="Products per variant" value={limit} onChange={setLimit} options={SAMPLE_SIZES} />
-          {variantFields("A", a, setA)}
-          {variantFields("B", b, setB)}
+          <div className="grid gap-4 md:grid-cols-2">
+            {variantFields("A", a, setA)}
+            {variantFields("B", b, setB)}
+          </div>
           {same ? <p className="text-xs text-error">Pick a different model or prompt for one variant.</p> : null}
         </div>
         <SheetFooter className="flex-row justify-end gap-2 border-t p-5">

@@ -1,11 +1,11 @@
-import type { Part } from "@google/genai";
+import type { ContentBlockParam } from "@anthropic-ai/sdk/resources/messages";
 import sharp from "sharp";
 import { z } from "zod";
 import type { GroupInput } from "../pipeline/group";
 import { htmlToText, sanitizeHtml } from "../pipeline/text";
 import { TAXONOMY, isCategory } from "../pipeline/taxonomy";
 import { storage } from "../storage";
-import { AiError, type Usage, generateJson, toResponseSchema, usageOf } from "./gemini";
+import { AiError, type Usage, generateJson, toResponseSchema, usageOf } from "./anthropic";
 import { type Prompt, loadPrompt, render } from "./prompts";
 import { unsupportedTerms, verifyClaims } from "./verify";
 
@@ -72,12 +72,15 @@ function promptInput(group: GroupInput, note?: string) {
   );
 }
 
-async function photoParts(group: GroupInput): Promise<Part[]> {
-  const parts: Part[] = [];
+async function photoParts(group: GroupInput): Promise<ContentBlockParam[]> {
+  const parts: ContentBlockParam[] = [];
   for (const p of group.photos.slice(0, MAX_PHOTOS_PER_CALL)) {
     try {
       const data = await sharp(await storage.read(p.storage_key)).rotate().resize(768, 768, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
-      parts.push({ text: `Photo ${p.file_name}:` }, { inlineData: { mimeType: "image/jpeg", data: data.toString("base64") } });
+      parts.push(
+        { type: "text", text: `Photo ${p.file_name}:` },
+        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: data.toString("base64") } },
+      );
     } catch {
       continue;
     }
@@ -109,14 +112,14 @@ export async function generateBuild(
   const record = (task: AiCallRecord["task"], version: string, usage: Usage, latencyMs: number, ok: boolean, errorCode: string | null) =>
     calls.push({ model, promptVersion: version, task, usage, latencyMs, ok, errorCode });
 
-  const parts: Part[] = [{ text: render(prompt.user, { input: promptInput(group, opts.note) }) }];
-  if (opts.withPhotos) parts.push(...(await photoParts(group)));
+  const content: ContentBlockParam[] = [{ type: "text", text: render(prompt.user, { input: promptInput(group, opts.note) }) }];
+  if (opts.withPhotos) content.push(...(await photoParts(group)));
   const taxonomy = TAXONOMY.map((c) => `- ${c}`).join("\n");
   const system = prompt.system.includes("{{taxonomy}}") ? render(prompt.system, { taxonomy }) : `${prompt.system}\n\n## Taxonomy\n\n${taxonomy}`;
 
   let result;
   try {
-    result = await generateJson({ model, system, parts, jsonSchema, maxOutputTokens: opts.maxOutputTokens, thinking: "low", temperature: 0.2 });
+    result = await generateJson({ model, system, content, jsonSchema, maxOutputTokens: opts.maxOutputTokens, effort: "low" });
   } catch (error) {
     const used = usageOf(error);
     record("build", prompt.version, used?.usage ?? { inputTokens: 0, outputTokens: 0 }, used?.latencyMs ?? 0, false, (error as AiError).kind ?? "unknown");
@@ -131,11 +134,10 @@ export async function generateBuild(
       const fixed = await generateJson({
         model,
         system: repair.system,
-        parts: [{ text: render(repair.user, { errors: parsed.errors, output: result.text.slice(0, 20_000) }) }],
+        content: [{ type: "text", text: render(repair.user, { errors: parsed.errors, output: result.text.slice(0, 20_000) }) }],
         jsonSchema,
         maxOutputTokens: opts.maxOutputTokens,
-        thinking: "minimal",
-        temperature: 0,
+        effort: "low",
       });
       record("repair", repair.version, fixed.usage, fixed.latencyMs, true, null);
       parsed = parseOutput(fixed.text);

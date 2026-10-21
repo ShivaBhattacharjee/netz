@@ -2,7 +2,7 @@ import { type Job, Worker } from "bullmq";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { product, store, translation } from "@/db/schema";
-import { classify } from "../ai/gemini";
+import { classify } from "../ai/anthropic";
 import { translateFields } from "../ai/translate";
 import { env } from "../env";
 import { sha256, stableJson } from "../ids";
@@ -63,7 +63,7 @@ export async function runTranslate(job: Job<TranslateJob>, worker: Worker) {
 
   const [owner] = await db.select({ name: store.name }).from(store).where(eq(store.id, p.storeId));
   const protectedNames = [p.attributes.brand, owner?.name].filter((n): n is string => !!n);
-  const model = config.GEMINI_MODEL_TRANSLATE;
+  const model = config.AI_MODEL_TRANSLATE;
 
   let result;
   try {

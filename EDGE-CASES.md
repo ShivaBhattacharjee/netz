@@ -11,9 +11,9 @@ Status values:
 - **Planned**: designed, not implemented.
 - **Not handled**: out of scope, with the reason.
 
-Stack these cases are written against: Next.js (app + API routes), Postgres via Drizzle, Better Auth (Google), Redis + BullMQ for the import queue, Gemini for parsing, extraction and translation (`GEMINI_MODEL_FAST` for clean rows, `GEMINI_MODEL_STRONG` for messy rows and photos).
+Stack these cases are written against: Next.js (app + API routes), Postgres via Drizzle, Better Auth (Google), Redis + BullMQ for the import queue, Anthropic Claude Haiku 5.5 for parsing, extraction and translation (`AI_MODEL_FAST` for clean rows, `AI_MODEL_STRONG` for messy rows and photos).
 
-Auth, stores and the import pipeline (upload → parse → clean → group → photos → AI build → translate, on BullMQ) are built. They were checked by hand against `evals/` (small, medium, 1,000 rows, 10,000 rows, and every file in `edge/`) in `AI_MODE=mock`; the Gemini calls themselves have not run yet because no API key is configured. There are no automated tests yet, so nothing is "Handled + tested".
+Auth, stores and the import pipeline (upload → parse → clean → group → photos → AI build → translate, on BullMQ) are built. They were checked by hand against `evals/` (small, medium, 1,000 rows, 10,000 rows, and every file in `edge/`) in `AI_MODE=mock`; the Claude calls themselves have not run yet because no API key is configured. There are no automated tests yet, so nothing is "Handled + tested".
 
 ---
 
@@ -44,22 +44,22 @@ Auth, stores and the import pipeline (upload → parse → clean → group → p
 | 1.21 | Row references a photo that was not uploaded | Product built without it; warning on the product, not a failure. | Handled, not tested |
 | 1.22 | Photo filenames that match several products (`IMG_0001.jpg`) | Match by SKU in filename first, then by explicit image column. Ambiguous matches are not guessed; the photo stays unmatched. | Handled, not tested |
 | 1.23 | Same photo uploaded twice under different names | Deduplicated by content hash. | Handled, not tested |
-| 1.24 | Supplier text in German or mixed languages | Detected per field; passed to the AI as source language, English output generated, original kept as the claim source. | Handled, not tested (needs a live Gemini run) |
-| 1.25 | Qualified claims ("frost-resistant (not frost-proof, bring indoors below 0 °C)") | The qualifier is part of the claim; the AI must not drop it. A validator checks that negations in the source are not inverted in the output. | Handled, not tested (needs a live Gemini run) |
+| 1.24 | Supplier text in German or mixed languages | Detected per field; passed to the AI as source language, English output generated, original kept as the claim source. | Handled, not tested (needs a live Claude run) |
+| 1.25 | Qualified claims ("frost-resistant (not frost-proof, bring indoors below 0 °C)") | The qualifier is part of the claim; the AI must not drop it. A validator checks that negations in the source are not inverted in the output. | Handled, not tested (needs a live Claude run) |
 
 ## 2. AI problems
 
 | # | What happens | What the app does | Status |
 | --- | --- | --- | --- |
-| 2.1 | Model returns invalid JSON | Gemini is called with `responseMimeType: application/json` and a `responseSchema`, but the output is still validated with zod: structured output narrows the shape, it does not guarantee it. One repair retry with the validation error in the prompt, then exponential backoff retries, then row **Failed** with "Model output did not match the schema". | Handled, not tested (needs a live Gemini run) |
+| 2.1 | Model returns invalid JSON | Claude is called with structured outputs (`output_config.format` with a JSON schema), but the output is still validated with zod: structured output narrows the shape, it does not guarantee it. One repair retry with the validation error in the prompt, then exponential backoff retries, then row **Failed** with "Model output did not match the schema". | Handled, not tested (needs a live Claude run) |
 | 2.2 | Model invents a claim (`organic`, `dishwasher-safe`) | Every claim must cite a source row and column. A post-check verifies the cited text actually contains the claim (normalised substring / synonym match). Unsupported claims are removed and the product goes to **Needs review**. | Handled, not tested |
 | 2.3 | Model changes a price, SKU or weight | Prices, SKUs and weights never come from the model; they come from the cleaning step. The model output for those fields is ignored. | Handled, not tested |
 | 2.4 | Low confidence on a field | Fields under 70% are highlighted; any required field under 70% sends the product to **Needs review** with the field name as the reason. | Handled, not tested |
 | 2.5 | Category not in the taxonomy | Validated against the allowed taxonomy; unknown category → **Needs review**, "Category not recognised". | Handled, not tested |
 | 2.6 | Timeout | Treated as retryable. Exponential backoff with jitter, max 5 attempts, then **Failed** with the last error. | Handled, not tested |
-| 2.7 | Rate limit (429 `RESOURCE_EXHAUSTED`) | The whole import queue pauses (BullMQ queue-level rate limit) until the delay in Gemini's `RetryInfo`, or a backoff when none is given. Per-minute (RPM/TPM) and per-day quotas are told apart: a daily quota pauses until the reset instead of retrying. UI shows "Paused, resuming in X minutes". No attempts are burned while paused. | Handled, not tested |
-| 2.8 | Provider down (5xx / `UNAVAILABLE` for minutes) | Circuit breaker in Redis, shared by every worker: 10 provider failures inside 60 s pause the AI queues for 30 s instead of burning attempts; the next success resets it. | Handled, not tested |
-| 2.9 | Gemini Batch job takes hours or partially fails | The batch job name is stored on the import before submission, so a restart polls the same job instead of resubmitting. Results are reconciled per item by key; failed or missing items re-enter the normal queue. A batch that expires unfinished is resubmitted only for unfinished items. | Planned |
+| 2.7 | Rate limit (429 `rate_limit_error`) | The whole import queue pauses (BullMQ queue-level rate limit) until the `retry-after` header, or a backoff when none is given. Exhausted credits or a workspace spend limit are reported as billing errors and pause longer. UI shows "Paused, resuming in X minutes". No attempts are burned while paused. | Handled, not tested |
+| 2.8 | Provider down (5xx / 529 `overloaded_error` for minutes) | Circuit breaker in Redis, shared by every worker: 10 provider failures inside 60 s pause the AI queues for 30 s instead of burning attempts; the next success resets it. | Handled, not tested |
+| 2.9 | Message Batches job takes hours or partially fails | The batch job name is stored on the import before submission, so a restart polls the same job instead of resubmitting. Results are reconciled per item by key; failed or missing items re-enter the normal queue. A batch that expires unfinished is resubmitted only for unfinished items. | Planned |
 | 2.10 | Model output contains HTML/script | Sanitised with the same allowlist as input. | Handled, not tested |
 | 2.11 | Prompt injection in supplier text ("ignore previous instructions") | Supplier text is passed as data in a delimited field, never as instructions. Output is schema-validated and claims are source-checked, which limits the damage. | Handled, not tested |
 | 2.12 | Cost runaway (retry storm, huge rows) | Per-import token budget, estimated up front with `countTokens` and tracked from `usageMetadata` on every response; the import pauses and asks the merchant when it is exceeded. | Planned |
@@ -145,7 +145,7 @@ Nothing the browser sends is trusted. These apply to every API route, server act
 | 7.9 | Large upload through a server action | Server actions keep the 1 MB body limit. Files go through a streaming upload route or presigned URL. | Handled, not tested |
 | 7.10 | API key leaked or guessed | Keys are `cf_` + 192 random bits, stored only as SHA-256 hashes with a visible prefix, shown once, scoped to one store, revocable, `last_used_at` tracked. A key cannot create keys or manage webhooks (session only). | Handled, not tested |
 | 7.11 | Webhook URL points at `localhost`, `169.254.169.254` or a private range (SSRF) | Rejected at creation (https only, no credentials, no private IP literals). At delivery every resolved address is checked inside the socket `lookup`, so DNS rebinding cannot slip a private IP in; redirects are not followed; 10 s timeout. Body signed `HMAC-SHA256(secret, "<t>.<body>")` in `x-catalogforge-signature`. `WEBHOOKS_ALLOW_PRIVATE=true` only for local development. | Handled, not tested |
-| 7.12 | Secret reaches the browser | `GEMINI_API_KEY`, `BETTER_AUTH_SECRET`, `DATABASE_URL` have no `NEXT_PUBLIC_` prefix; server modules import `server-only`. Env validated with zod at boot so a missing key fails at start, not mid-import. | Partly handled (`server-only`, env validated at worker start); app env validation Planned |
+| 7.12 | Secret reaches the browser | `ANTHROPIC_API_KEY`, `BETTER_AUTH_SECRET`, `DATABASE_URL` have no `NEXT_PUBLIC_` prefix; server modules import `server-only`. Env validated with zod at boot so a missing key fails at start, not mid-import. | Partly handled (`server-only`, env validated at worker start); app env validation Planned |
 | 7.13 | Logs capture secrets or merchant data | Logs carry IDs, counts and error codes; no API keys, tokens, prompts or supplier text. | Planned |
 | 7.14 | Worker job payload tampered in Redis | Jobs carry IDs only (`import_id`, `group_key`, `stage`); the worker re-reads data and the store from Postgres. | Handled, not tested |
 
