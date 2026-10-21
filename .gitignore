@@ -1,0 +1,11 @@
+evals/
+scripts/
+.DS_Store
+
+design.md
+project.md
+
+web/.agents/
+web/.claude/
+web/skills-lock.json
+web/bun.lock
