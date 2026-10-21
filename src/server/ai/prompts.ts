@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { env } from "../env";
 
 export interface Prompt {
   name: string;
@@ -9,13 +10,13 @@ export interface Prompt {
 }
 
 const cache = new Map<string, Prompt>();
-const DIR = path.resolve(process.env.PROMPTS_DIR ?? "prompts");
+const root = () => path.resolve(env().PROMPTS_DIR);
 
 export function loadPrompt(name: string): Prompt {
   const hit = cache.get(name);
   if (hit) return hit;
 
-  const raw = readFileSync(path.join(DIR, `${name}.md`), "utf8");
+  const raw = readFileSync(path.join(root(), `${name}.md`), "utf8");
   const front = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!front) throw new Error(`Prompt ${name}.md has no front matter`);
   const version = front[1].match(/^version:\s*(.+)$/m)?.[1].trim();
@@ -39,7 +40,7 @@ export function render(template: string, vars: Record<string, string>) {
 }
 
 export function buildPromptVariants() {
-  return readdirSync(DIR)
+  return readdirSync(root())
     .filter((f) => /^build-product.*\.md$/.test(f))
     .map((f) => f.replace(/\.md$/, ""))
     .sort()

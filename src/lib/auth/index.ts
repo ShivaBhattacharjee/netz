@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { env } from "@/server/env";
 import { consume } from "@/server/rate-limit";
 
 async function soleOwnedStores(userId: string) {
@@ -17,11 +18,13 @@ async function soleOwnedStores(userId: string) {
 }
 
 export const auth = betterAuth({
+  secret: env().BETTER_AUTH_SECRET,
+  baseURL: env().BETTER_AUTH_URL,
   database: drizzleAdapter(db, { provider: "pg", schema }),
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: env().GOOGLE_CLIENT_ID,
+      clientSecret: env().GOOGLE_CLIENT_SECRET,
     },
   },
   account: {

@@ -1,6 +1,7 @@
 import Anthropic, { APIConnectionError, APIConnectionTimeoutError, APIError } from "@anthropic-ai/sdk";
 import { transformJSONSchema } from "@anthropic-ai/sdk/lib/transform-json-schema";
 import type { ContentBlockParam, OutputConfig } from "@anthropic-ai/sdk/resources/messages";
+import { env } from "../env";
 
 export type AiErrorKind =
   | "rate_limit"
@@ -53,7 +54,7 @@ export interface GenerateResult {
 let client: Anthropic | undefined;
 
 function anthropic() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = env().ANTHROPIC_API_KEY;
   if (!apiKey) throw new AiError("auth", "ANTHROPIC_API_KEY is not set");
   client ??= new Anthropic({ apiKey, maxRetries: 0 });
   return client;

@@ -16,15 +16,6 @@ import { deliver } from "@/server/webhooks";
 import { BACKOFF_STRATEGY, QUEUE, type QueueName, jitteredBackoff } from "@/server/queues";
 import { createRedis, redis } from "@/server/redis";
 
-const CONCURRENCY: Record<QueueName, number> = {
-  [QUEUE.parse]: Number(process.env.PARSE_CONCURRENCY ?? 2),
-  [QUEUE.aiCheap]: Number(process.env.AI_CHEAP_CONCURRENCY ?? 16),
-  [QUEUE.aiStrong]: Number(process.env.AI_STRONG_CONCURRENCY ?? 6),
-  [QUEUE.translate]: Number(process.env.TRANSLATE_CONCURRENCY ?? 8),
-  [QUEUE.webhooks]: Number(process.env.WEBHOOK_CONCURRENCY ?? 4),
-  [QUEUE.eval]: 1,
-};
-
 const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>> = {
   [QUEUE.parse]: (job) => runParse(job),
   [QUEUE.aiCheap]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
@@ -57,7 +48,15 @@ async function main() {
   await assertMigrated();
   await checkModels(config);
 
-  const selected = (process.env.WORKER_QUEUES?.split(",").map((q) => q.trim()).filter(Boolean) ?? Object.values(QUEUE)) as QueueName[];
+  const concurrency: Record<QueueName, number> = {
+    [QUEUE.parse]: config.PARSE_CONCURRENCY,
+    [QUEUE.aiCheap]: config.AI_CHEAP_CONCURRENCY,
+    [QUEUE.aiStrong]: config.AI_STRONG_CONCURRENCY,
+    [QUEUE.translate]: config.TRANSLATE_CONCURRENCY,
+    [QUEUE.webhooks]: config.WEBHOOK_CONCURRENCY,
+    [QUEUE.eval]: 1,
+  };
+  const selected = (config.WORKER_QUEUES?.split(",").map((q) => q.trim()).filter(Boolean) ?? Object.values(QUEUE)) as QueueName[];
   const unknown = selected.filter((q) => !(q in HANDLERS));
   if (unknown.length) throw new Error(`Unknown queue(s) in WORKER_QUEUES: ${unknown.join(", ")}`);
 
@@ -65,7 +64,7 @@ async function main() {
     const processor: Processor = (job) => HANDLERS[name](job, worker);
     const worker: Worker = new Worker(name, processor, {
       connection: createRedis(),
-      concurrency: CONCURRENCY[name],
+      concurrency: concurrency[name],
       lockDuration: 30_000,
       stalledInterval: 15_000,
       maxStalledCount: 2,

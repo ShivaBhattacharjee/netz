@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { sql } from "drizzle-orm";
+import { env } from "@/server/env";
 import { db } from ".";
 
 interface Journal {
@@ -9,7 +10,7 @@ interface Journal {
 
 /** Throws when the database is behind the migrations in `drizzle/`, so new code never runs on an old schema. */
 export async function assertMigrated() {
-  const journal = JSON.parse(readFileSync(path.resolve(process.env.MIGRATIONS_DIR ?? "drizzle", "meta/_journal.json"), "utf8")) as Journal;
+  const journal = JSON.parse(readFileSync(path.resolve(env().MIGRATIONS_DIR, "meta/_journal.json"), "utf8")) as Journal;
   let applied = 0;
   try {
     const result = await db.execute<{ last: string | null }>(sql`select max(created_at) as last from drizzle.__drizzle_migrations`);

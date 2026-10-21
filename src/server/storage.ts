@@ -3,12 +3,12 @@ import { mkdir, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-
-const ROOT = path.resolve(process.env.STORAGE_DIR ?? ".data/uploads");
+import { env } from "./env";
 
 function resolve(key: string) {
-  const full = path.resolve(ROOT, key);
-  if (!full.startsWith(ROOT + path.sep)) throw new Error(`Storage key escapes the storage root: ${key}`);
+  const root = path.resolve(env().STORAGE_DIR);
+  const full = path.resolve(root, key);
+  if (!full.startsWith(root + path.sep)) throw new Error(`Storage key escapes the storage root: ${key}`);
   return full;
 }
 

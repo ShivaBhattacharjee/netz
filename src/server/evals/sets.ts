@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { env } from "../env";
 
-const DIR = path.resolve(process.env.EVALS_DIR ?? "evals");
+const root = () => path.resolve(env().EVALS_DIR);
 
 export interface LabelVariant {
   sku: string;
@@ -35,17 +36,17 @@ const isSet = (dir: string) => existsSync(path.join(dir, "labels.json")) && exis
 
 function setNames(): string[] {
   const subdirs = (rel: string) =>
-    readdirSync(path.join(DIR, rel), { withFileTypes: true })
+    readdirSync(path.join(root(), rel), { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => (rel ? `${rel}/${d.name}` : d.name));
-  return subdirs("").flatMap((name) => (isSet(path.join(DIR, name)) ? [name] : subdirs(name).filter((n) => isSet(path.join(DIR, n)))));
+  return subdirs("").flatMap((name) => (isSet(path.join(root(), name)) ? [name] : subdirs(name).filter((n) => isSet(path.join(root(), n)))));
 }
 
 export function listEvalSets() {
-  if (!existsSync(DIR)) return [];
+  if (!existsSync(root())) return [];
   return setNames()
     .map((name) => {
-      const labels = JSON.parse(readFileSync(path.join(DIR, name, "labels.json"), "utf8")) as Labels;
+      const labels = JSON.parse(readFileSync(path.join(root(), name, "labels.json"), "utf8")) as Labels;
       return { name, products: labels.products.length, rows: labels.total_rows };
     })
     .sort((a, b) => a.products - b.products);
@@ -53,8 +54,8 @@ export function listEvalSets() {
 
 export function loadEvalSet(name: string) {
   if (!/^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(name)) throw new EvalSetError("Unknown eval set");
-  const dir = path.join(DIR, name);
-  if (!existsSync(path.join(dir, "labels.json"))) throw new EvalSetError(`Eval set "${name}" was not found in ${DIR}`);
+  const dir = path.join(root(), name);
+  if (!existsSync(path.join(dir, "labels.json"))) throw new EvalSetError(`Eval set "${name}" was not found in ${root()}`);
   return {
     sheet: readFileSync(path.join(dir, "supplier-sheet.csv")),
     labels: JSON.parse(readFileSync(path.join(dir, "labels.json"), "utf8")) as Labels,

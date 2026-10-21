@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { store, storeMember } from "@/db/schema";
 import { ACTIVE_STORE_COOKIE, requireUser } from "@/lib/auth/session";
+import { env } from "@/server/env";
 import { redis } from "@/server/redis";
 import { createStoreSchema } from "./schema";
 
@@ -39,7 +40,7 @@ async function setActiveStore(storeId: string) {
   (await cookies()).set(ACTIVE_STORE_COOKIE, storeId, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: env().NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   });

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { aiCall, importGroup, importJob, product } from "@/db/schema";
 import type { Metrics } from "@/lib/types";
 import { rateFor } from "./ai/pricing";
+import { env } from "./env";
 
 const LATENCY_EDGES = [0, 2000, 4000, 6000, 10000, Number.POSITIVE_INFINITY];
 const LATENCY_LABELS = ["<2s", "2–4s", "4–6s", "6–10s", "10s+"];
@@ -11,7 +12,7 @@ export async function storeMetrics(storeId: string, from: Date, to: Date): Promi
   const since = from;
   const until = new Date(to.getTime() + 24 * 3600 * 1000);
   const days = Math.round((until.getTime() - since.getTime()) / (24 * 3600 * 1000));
-  const strongModel = process.env.AI_MODEL_STRONG ?? "claude-haiku-5-5";
+  const strongModel = env().AI_MODEL_STRONG;
   const strong = rateFor(strongModel) ?? { input: 0, output: 0 };
 
   const [statusRows, modelRows, latencyRows, coverageRows, funnelRows, dailyGroups, dailyCost] = await Promise.all([

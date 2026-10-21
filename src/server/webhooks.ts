@@ -7,6 +7,7 @@ import { and, arrayContains, count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { webhook, webhookDelivery } from "@/db/schema";
 import { newId } from "./ids";
+import { env } from "./env";
 import { log } from "./log";
 import { queue, QUEUE } from "./queues";
 
@@ -24,7 +25,7 @@ export interface WebhookJob {
   payload: Record<string, unknown>;
 }
 
-const allowPrivate = () => process.env.WEBHOOKS_ALLOW_PRIVATE === "true";
+const allowPrivate = () => env().WEBHOOKS_ALLOW_PRIVATE;
 
 function isPrivateAddress(address: string) {
   if (isIP(address) === 6) {
