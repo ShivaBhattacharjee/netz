@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { aiCall, importGroup, importJob, product } from "@/db/schema";
 import type { Metrics } from "@/lib/types";
@@ -7,8 +7,10 @@ import { rateFor } from "./ai/pricing";
 const LATENCY_EDGES = [0, 2000, 4000, 6000, 10000, Number.POSITIVE_INFINITY];
 const LATENCY_LABELS = ["<2s", "2–4s", "4–6s", "6–10s", "10s+"];
 
-export async function storeMetrics(storeId: string, days: number): Promise<Metrics> {
-  const since = new Date(Date.now() - days * 24 * 3600 * 1000);
+export async function storeMetrics(storeId: string, from: Date, to: Date): Promise<Metrics> {
+  const since = from;
+  const until = new Date(to.getTime() + 24 * 3600 * 1000);
+  const days = Math.round((until.getTime() - since.getTime()) / (24 * 3600 * 1000));
   const strongModel = process.env.GEMINI_MODEL_STRONG ?? "gemini-3.8-flash";
   const strong = rateFor(strongModel) ?? { input: 0, output: 0 };
 
@@ -28,12 +30,12 @@ export async function storeMetrics(storeId: string, days: number): Promise<Metri
         output: sql<number>`coalesce(sum(${aiCall.outputTokens}), 0)::bigint`,
       })
       .from(aiCall)
-      .where(and(eq(aiCall.storeId, storeId), gte(aiCall.createdAt, since)))
+      .where(and(eq(aiCall.storeId, storeId), gte(aiCall.createdAt, since), lt(aiCall.createdAt, until)))
       .groupBy(aiCall.model),
     db
       .select({ ms: sql<number>`sum(${aiCall.latencyMs})::int` })
       .from(aiCall)
-      .where(and(eq(aiCall.storeId, storeId), gte(aiCall.createdAt, since), sql`${aiCall.task} <> 'translate'`, sql`${aiCall.productId} is not null`))
+      .where(and(eq(aiCall.storeId, storeId), gte(aiCall.createdAt, since), lt(aiCall.createdAt, until), sql`${aiCall.task} <> 'translate'`, sql`${aiCall.productId} is not null`))
       .groupBy(aiCall.productId),
     db.execute<{ locale: string; current: number; out_of_date: number; missing: number; total: number }>(sql`
       with fields as (
@@ -69,7 +71,7 @@ export async function storeMetrics(storeId: string, days: number): Promise<Metri
         failed: sql<number>`count(*) filter (where ${importGroup.status} = 'failed')::int`,
       })
       .from(importGroup)
-      .where(and(eq(importGroup.storeId, storeId), gte(importGroup.updatedAt, since), sql`${importGroup.status} <> 'pending'`))
+      .where(and(eq(importGroup.storeId, storeId), gte(importGroup.updatedAt, since), lt(importGroup.updatedAt, until), sql`${importGroup.status} <> 'pending'`))
       .groupBy(sql`1`),
     db
       .select({
@@ -79,7 +81,7 @@ export async function storeMetrics(storeId: string, days: number): Promise<Metri
         output: sql<number>`coalesce(sum(${aiCall.outputTokens}), 0)::bigint`,
       })
       .from(aiCall)
-      .where(and(eq(aiCall.storeId, storeId), gte(aiCall.createdAt, since)))
+      .where(and(eq(aiCall.storeId, storeId), gte(aiCall.createdAt, since), lt(aiCall.createdAt, until)))
       .groupBy(sql`1`),
   ]);
 
@@ -97,8 +99,8 @@ export async function storeMetrics(storeId: string, days: number): Promise<Metri
   const p95 = latencies[Math.floor(latencies.length * 0.95)] ?? 0;
 
   const byDay = new Map<string, Metrics["daily"][number]>();
-  for (let i = days - 1; i >= 0; i--) {
-    const day = new Date(Date.now() - i * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  for (let i = 0; i < days; i++) {
+    const day = new Date(since.getTime() + i * 24 * 3600 * 1000).toISOString().slice(0, 10);
     byDay.set(day, { day, done: 0, review: 0, failed: 0, cost_micros: 0, saved_micros: 0 });
   }
   for (const g of dailyGroups) Object.assign(byDay.get(g.day) ?? {}, { done: g.done, review: g.review, failed: g.failed });

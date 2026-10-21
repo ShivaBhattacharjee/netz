@@ -4,12 +4,12 @@ import { Activity, Clock, Coins, Cpu, Filter, Gauge, Languages, Layers, PackageC
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Label, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { api } from "@/lib/data/api";
 import { useDataVersion } from "@/lib/data/store";
 import type { Metrics } from "@/lib/types";
 import { formatDuration, formatNumber, formatPercent, formatUsd } from "@/lib/format";
 import { PageHeader, Panel, StatCard } from "./common";
+import { DateRangeButton, lastDays } from "./date-range-button";
 import { PageLoader } from "./page-loader";
 
 const shortDay = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -48,24 +48,28 @@ function Legend({ items }: { items: { label: string; color: string; value?: stri
   );
 }
 
-function useMetrics(days: string) {
+const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function useMetrics(range: { from: Date; to: Date }) {
+  const from = isoDay(range.from);
+  const to = isoDay(range.to);
   const version = useDataVersion();
   const [data, setData] = useState<Metrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    api<Metrics>(`/api/metrics?days=${days}`)
+    api<Metrics>(`/api/metrics?from=${from}&to=${to}`)
       .then((d) => !cancelled && (setData(d), setError(null)))
       .catch((e: Error) => !cancelled && setError(e.message));
     return () => {
       cancelled = true;
     };
-  }, [days, version]);
+  }, [from, to, version]);
   return { data, error };
 }
 
 export function MetricsView() {
-  const [range, setRange] = useState("14");
+  const [range, setRange] = useState(() => lastDays(14));
   const { data, error } = useMetrics(range);
 
   const m = useMemo(() => {
@@ -89,12 +93,7 @@ export function MetricsView() {
     <PageHeader
       title="Overview"
       meta="Throughput, quality and AI spend across all imports"
-      actions={
-        <ToggleGroup type="single" variant="outline" size="sm" value={range} onValueChange={(v) => v && setRange(v)}>
-          <ToggleGroupItem value="7">7 days</ToggleGroupItem>
-          <ToggleGroupItem value="14">14 days</ToggleGroupItem>
-        </ToggleGroup>
-      }
+      actions={<DateRangeButton value={range} onChange={setRange} />}
     />
   );
 
