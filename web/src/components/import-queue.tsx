@@ -8,6 +8,7 @@ import { EmptyState } from "./empty-state";
 import { ImportActions } from "./import-actions";
 import { ImportProgressCell, statusDetail } from "./import-progress";
 import { ImportSheet } from "./import-sheet";
+import { PageLoader } from "./page-loader";
 import { UploadButton } from "./upload-dialog";
 
 export function ImportQueue() {
@@ -15,7 +16,7 @@ export function ImportQueue() {
   const ready = useImportsReady();
   const [selected, setSelected] = useState<string | null>(null);
 
-  if (!ready) return null;
+  if (!ready) return <PageLoader />;
 
   if (imports.length === 0) {
     return (

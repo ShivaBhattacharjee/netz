@@ -10,6 +10,7 @@ import { useDataVersion } from "@/lib/data/store";
 import type { Metrics } from "@/lib/types";
 import { formatDuration, formatNumber, formatPercent, formatUsd } from "@/lib/format";
 import { PageHeader, Panel, StatCard } from "./common";
+import { PageLoader } from "./page-loader";
 
 const shortDay = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
@@ -101,7 +102,7 @@ export function MetricsView() {
     return (
       <>
         {header}
-        {error ? <p className="text-sm text-error">{error}</p> : null}
+        {error ? <p className="text-sm text-error">{error}</p> : <PageLoader />}
       </>
     );
   }

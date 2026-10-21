@@ -24,6 +24,7 @@ import { formatDuration, formatMoney, formatNumber, formatUsd, formatWeight } fr
 import type { FieldTranslation, Product, TranslatableField, TranslatedLocale } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Confidence, PageHeader, ProductStatusLabel, StatusLabel } from "./common";
+import { PageLoader } from "./page-loader";
 import { RerunDialog } from "./rerun-dialog";
 import type { Locale } from "@/lib/types";
 
@@ -368,7 +369,7 @@ export function ProductReview({ id }: { id: string }) {
   const [highlight, setHighlight] = useState<number | null>(null);
 
   if (!product) {
-    if (!ready) return null;
+    if (!ready) return <PageLoader />;
     return (
       <PageHeader
         title="Product not found"

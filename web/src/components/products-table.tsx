@@ -35,6 +35,7 @@ import { Confidence, PageHeader, ProductStatusLabel } from "./common";
 import { DataTable, SortableHeader } from "./data-table";
 import { EmptyState } from "./empty-state";
 import { FilterTabs } from "./filter-tabs";
+import { PageLoader } from "./page-loader";
 import { Pagination } from "./pagination";
 import { ProductSheet } from "./product-sheet";
 import { RerunDialog } from "./rerun-dialog";
@@ -196,7 +197,14 @@ export function ProductsTable() {
     else download("catalog.json", toJson(rows), "application/json");
   }
 
-  if (!ready) return <PageHeader title="Products" />;
+  if (!ready) {
+    return (
+      <>
+        <PageHeader title="Products" />
+        <PageLoader />
+      </>
+    );
+  }
 
   if (products.length === 0) {
     return (

@@ -103,7 +103,7 @@ export function PageHeader({ title, meta, actions }: { title: ReactNode; meta?: 
         <h1 className="truncate text-section font-heading">{title}</h1>
         {meta ? <div className="text-compact text-muted-foreground">{meta}</div> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 [&_[data-slot=button]]:h-10 [&_[data-slot=button]]:px-4 [&_[data-slot=button][data-size=icon]]:w-10 [&_[data-slot=button][data-size=icon]]:px-0">{actions}</div> : null}
     </div>
   );
 }

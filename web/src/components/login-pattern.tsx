@@ -2,8 +2,25 @@
 
 import { useEffect, useRef } from "react";
 
-const GAP = 29;
-const LENGTH = 12;
+const CELL = 22;
+const SIZE = 9;
+const SCATTER = 12;
+
+interface Cell {
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  px: number;
+  py: number;
+  spin: number;
+  rate: number;
+  phase: number;
+}
+
+function ease(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
 
 export function LoginPattern() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -18,6 +35,12 @@ export function LoginPattern() {
     let width = 0;
     let height = 0;
     let color = "";
+    let cells: Cell[] = [];
+
+    const seed = (i: number) => {
+      const s = Math.sin(i * 12.9898) * 43758.5453;
+      return s - Math.floor(s);
+    };
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -27,28 +50,48 @@ export function LoginPattern() {
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       color = getComputedStyle(canvas).color;
+      cells = [];
+      let i = 0;
+      for (let y = CELL / 2; y < height; y += CELL) {
+        for (let x = CELL / 2; x < width; x += CELL) {
+          i++;
+          cells.push({
+            x,
+            y,
+            fx: 0.25 + seed(i) * 0.6,
+            fy: 0.25 + seed(i + 7.1) * 0.6,
+            px: seed(i + 2.2) * Math.PI * 2,
+            py: seed(i + 5.5) * Math.PI * 2,
+            spin: (seed(i + 3.3) - 0.5) * Math.PI,
+            rate: 0.12 + seed(i + 1.7) * 0.35,
+            phase: seed(i + 9.4) * Math.PI * 2,
+          });
+        }
+      }
     };
 
     const draw = (t: number) => {
       ctx.clearRect(0, 0, width, height);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.lineCap = "round";
+      ctx.fillStyle = color;
       const time = reduced ? 0 : t / 1000;
-      const cx = width * 0.7;
-      const cy = height * 0.35;
-      for (let y = GAP / 2; y < height; y += GAP) {
-        for (let x = GAP / 2; x < width; x += GAP) {
-          const dist = Math.hypot(x - cx, y - cy);
-          const angle = -Math.PI / 3 + time * 0.6 - dist / 140;
-          const dx = (Math.cos(angle) * LENGTH) / 2;
-          const dy = (Math.sin(angle) * LENGTH) / 2;
-          ctx.beginPath();
-          ctx.moveTo(x - dx, y - dy);
-          ctx.lineTo(x + dx, y + dy);
-          ctx.stroke();
-        }
+
+      for (const c of cells) {
+        const wave = Math.sin(time * c.rate + c.phase);
+        const order = ease(Math.min(1, Math.max(0, wave * 1.4 + 0.2)));
+        const loose = 1 - order;
+        const ox = Math.sin(time * c.fx + c.px) * SCATTER;
+        const oy = Math.cos(time * c.fy + c.py) * SCATTER;
+        ctx.globalAlpha = 0.18 + order * 0.5;
+        ctx.save();
+        ctx.translate(c.x + ox * loose, c.y + oy * loose);
+        ctx.rotate((c.spin + time * c.rate) * loose);
+        const s = SIZE - loose * 3;
+        ctx.beginPath();
+        ctx.roundRect(-s / 2, -s / 2, s, s, 1.5);
+        ctx.fill();
+        ctx.restore();
       }
+      ctx.globalAlpha = 1;
       if (!reduced) frame = requestAnimationFrame(draw);
     };
 
@@ -65,8 +108,7 @@ export function LoginPattern() {
   return (
     <aside aria-hidden className="relative hidden min-w-0 flex-1 flex-col py-6 pr-6 md:flex">
       <div className="relative flex-1 overflow-hidden border-t border-border">
-        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full text-muted-foreground/60" />
-        <div className="absolute inset-x-0 bottom-0 h-[62%] bg-linear-to-b from-background/0 via-background/85 via-52% to-background" />
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full text-muted-foreground" />
       </div>
       <div className="min-h-10 border-t border-border" />
     </aside>

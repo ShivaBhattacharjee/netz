@@ -14,6 +14,7 @@ import { FilterTabs } from "./filter-tabs";
 import { ImportActions } from "./import-actions";
 import { ImportRowSheet } from "./import-row-sheet";
 import { ImportBar, statusDetail } from "./import-progress";
+import { PageLoader } from "./page-loader";
 import { Pagination } from "./pagination";
 import { UnmatchedPhotos } from "./unmatched-photos";
 
@@ -64,7 +65,7 @@ export function ImportDetail({ id }: { id: string }) {
   });
 
   if (!job) {
-    if (!ready) return null;
+    if (!ready) return <PageLoader />;
     return (
       <PageHeader
         title="Import not found"

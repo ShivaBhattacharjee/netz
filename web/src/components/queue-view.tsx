@@ -1,56 +1,115 @@
 "use client";
 
-import { Cpu, Layers, Server, Timer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Cpu, Layers, RefreshCw, Server, Timer } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/lib/data/api";
 import { formatNumber } from "@/lib/format";
 import type { QueueStats } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel, StatCard } from "./common";
 import { EmptyState } from "./empty-state";
+import { PageLoader } from "./page-loader";
 
-const POLL_MS = 3000;
+const INTERVALS = [
+  { value: "1000", label: "Every 1 second" },
+  { value: "3000", label: "Every 3 seconds" },
+  { value: "10000", label: "Every 10 seconds" },
+  { value: "30000", label: "Every 30 seconds" },
+  { value: "60000", label: "Every minute" },
+  { value: "0", label: "Paused" },
+];
+const INTERVAL_KEY = "queue-refresh-ms";
+
+function savedInterval() {
+  try {
+    const saved = window.localStorage.getItem(INTERVAL_KEY);
+    return saved && INTERVALS.some((i) => i.value === saved) ? saved : "3000";
+  } catch {
+    return "3000";
+  }
+}
 
 const descriptions: Record<string, string> = {
   parse: "Reads the sheet, cleans and groups rows, matches photos",
   "ai.cheap": "Builds clean product groups with the fast model",
   "ai.strong": "Builds messy groups and photo-heavy products with the stronger model",
   translate: "Translates titles, descriptions and SEO fields into German and French",
+  webhooks: "Delivers signed webhook events to your endpoints",
 };
 
-function useQueueStats() {
+function useQueueStats(intervalMs: number) {
   const [stats, setStats] = useState<QueueStats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    let stopped = false;
-    const tick = async () => {
-      try {
-        setStats(await api<QueueStats>("/api/queues"));
-        setError(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not reach the queue");
-      }
-      if (!stopped) timer = setTimeout(tick, POLL_MS);
-    };
-    void tick();
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setStats(await api<QueueStats>("/api/queues"));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not reach the queue");
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  return { stats, error };
+
+  useEffect(() => {
+    void refresh();
+    if (!intervalMs) return;
+    const timer = setInterval(() => void refresh(), intervalMs);
+    return () => clearInterval(timer);
+  }, [refresh, intervalMs]);
+
+  return { stats, error, loading, refresh };
 }
 
 export function QueueView() {
-  const { stats, error } = useQueueStats();
-  const header = <PageHeader title="Queue & workers" meta="Live job counts per queue, refreshed every 3 seconds" />;
+  const [interval, setIntervalValue] = useState("3000");
+  useEffect(() => setIntervalValue(savedInterval()), []);
+  const { stats, error, loading, refresh } = useQueueStats(Number(interval));
+
+  const header = (
+    <PageHeader
+      title="Queue & workers"
+      meta="Live job counts for each queue"
+      actions={
+        <>
+          <Select
+            value={interval}
+            onValueChange={(v) => {
+              setIntervalValue(v);
+              try {
+                window.localStorage.setItem(INTERVAL_KEY, v);
+              } catch {}
+            }}
+          >
+            <SelectTrigger className="h-10 w-44" aria-label="Refresh interval">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INTERVALS.map((i) => (
+                <SelectItem key={i.value} value={i.value}>
+                  {i.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" aria-label="Refresh now" disabled={loading} onClick={() => void refresh()}>
+            <RefreshCw className={loading ? "animate-spin" : undefined} />
+          </Button>
+        </>
+      }
+    />
+  );
 
   if (!stats) {
     return (
       <>
         {header}
-        {error ? <EmptyState title="Queue unavailable" description={error} /> : null}
+        {error ? <EmptyState title="Queue unavailable" description={error} /> : <PageLoader />}
       </>
     );
   }
