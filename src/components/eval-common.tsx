@@ -1,7 +1,7 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { Plus, RotateCcw, Square } from "lucide-react";
+import { type MouseEvent, type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,6 +112,33 @@ export function RunStatus({ run }: { run: EvalRun }) {
     <StatusLabel tone="info">
       Running {formatNumber(run.done)}/{formatNumber(run.total)}
     </StatusLabel>
+  );
+}
+
+export function RunActions({ run, onChanged }: { run: EvalRun; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const action = run.status === "queued" || run.status === "running" ? "stop" : run.status === "failed" ? "retry" : null;
+  if (!action) return null;
+
+  async function act(event: MouseEvent) {
+    event.stopPropagation();
+    setBusy(true);
+    try {
+      await api(`/api/evals/${run.id}/${action}`, { method: "POST" });
+      toast.success(action === "stop" ? "Evaluation stopped" : "Evaluation queued again");
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `Could not ${action} the evaluation`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Button size="xs" variant="outline" disabled={busy} onClick={(e) => void act(e)} onKeyDown={(e) => e.stopPropagation()}>
+      {action === "stop" ? <Square data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}
+      {action === "stop" ? "Stop" : "Retry"}
+    </Button>
   );
 }
 

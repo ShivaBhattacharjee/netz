@@ -1,5 +1,5 @@
 import type { Job } from "bullmq";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { evalRun, type FieldScores } from "@/db/schema";
 import { type AiCallRecord, type BuiltProduct, finalizeBuild, generateBuild } from "../ai/build";
@@ -25,7 +25,8 @@ function sleep(ms: number) {
 
 export async function runEval(job: Job<EvalJob>) {
   const [run] = await db.select().from(evalRun).where(eq(evalRun.id, job.data.runId));
-  if (!run || run.status === "completed") return { skipped: true };
+  if (!run || run.status === "completed" || run.status === "failed") return { skipped: true };
+  const live = and(eq(evalRun.id, run.id), inArray(evalRun.status, ["queued", "running"]));
 
   try {
     const config = env();
@@ -39,7 +40,8 @@ export async function runEval(job: Job<EvalJob>) {
 
     const byKey = new Map(groups.map((g) => [g.group_key, g]));
     const sample = labels.products.filter((l) => byKey.has(l.group)).slice(0, run.sampleLimit);
-    await db.update(evalRun).set({ status: "running", total: sample.length, done: 0, scores }).where(eq(evalRun.id, run.id));
+    const started = await db.update(evalRun).set({ status: "running", total: sample.length, done: 0, scores }).where(live).returning({ id: evalRun.id });
+    if (!started.length) return { stopped: true };
 
     let invented = 0;
     let failures = 0;
@@ -47,6 +49,7 @@ export async function runEval(job: Job<EvalJob>) {
     const latencies: number[] = [];
     const calls: AiCallRecord[] = [];
     let next = 0;
+    let stopped = false;
 
     async function buildOne(index: number) {
       const label = sample[index];
@@ -80,19 +83,21 @@ export async function runEval(job: Job<EvalJob>) {
       invented += scoreBuild(built, label, scores, notes);
       done += 1;
       if (done % 5 === 0 || done === sample.length) {
-        await db.update(evalRun).set({ done, scores, inventedClaims: invented, failures }).where(eq(evalRun.id, run.id));
+        const updated = await db.update(evalRun).set({ done, scores, inventedClaims: invented, failures }).where(live).returning({ id: evalRun.id });
+        if (!updated.length) stopped = true;
       }
     }
 
     await Promise.all(
       Array.from({ length: Math.min(PARALLEL, sample.length) }, async () => {
-        while (next < sample.length) await buildOne(next++);
+        while (!stopped && next < sample.length) await buildOne(next++);
       }),
     );
 
     latencies.sort((a, b) => a - b);
     const cost = calls.reduce((a, c) => a + costMicros(c.model, c.usage), 0);
     await recordCalls(db, calls, { storeId: run.storeId, importId: null });
+    if (stopped) return { stopped: true, done };
     await db
       .update(evalRun)
       .set({
@@ -108,10 +113,10 @@ export async function runEval(job: Job<EvalJob>) {
         p50Ms: latencies[Math.floor(latencies.length / 2)] ?? 0,
         finishedAt: new Date(),
       })
-      .where(eq(evalRun.id, run.id));
+      .where(live);
     return { done, invented, failures };
   } catch (error) {
-    await db.update(evalRun).set({ status: "failed", error: (error as Error).message, finishedAt: new Date() }).where(eq(evalRun.id, run.id));
+    await db.update(evalRun).set({ status: "failed", error: (error as Error).message, finishedAt: new Date() }).where(live);
     return { failed: (error as Error).message };
   }
 }

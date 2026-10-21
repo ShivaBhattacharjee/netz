@@ -17,6 +17,7 @@ import { UploadEvalSet } from "./eval-sets";
 import {
   OptionSelect,
   PromptPicker,
+  RunActions,
   RunStatus,
   SampleSizeSelect,
   accuracy,
@@ -130,7 +131,7 @@ const COMPARED: { key: string; label: string; better: "higher" | "lower"; value:
   { key: "latency", label: "p50 build time", better: "lower", value: (r) => r.p50_ms || null, format: (v) => (v === null ? "–" : formatDuration(v)) },
 ];
 
-function Comparison({ experiment }: { experiment: Experiment }) {
+function Comparison({ experiment, onChanged }: { experiment: Experiment; onChanged: () => void }) {
   const [a, b] = experiment.variants;
   const finished = a?.status === "completed" && b?.status === "completed";
   if (!a || !b) return null;
@@ -162,7 +163,11 @@ function Comparison({ experiment }: { experiment: Experiment }) {
               <td className="px-4 py-2.5 text-muted-foreground">Status</td>
               {[a, b].map((r) => (
                 <td key={r.id} className="px-4 py-2.5 text-right">
-                  <RunStatus run={r} />
+                  <div className="flex items-center justify-end gap-2">
+                    <RunStatus run={r} />
+                    <RunActions run={r} onChanged={onChanged} />
+                  </div>
+                  {r.error ? <span className="mt-0.5 block text-xs text-error">{r.error}</span> : null}
                 </td>
               ))}
             </tr>
@@ -255,7 +260,7 @@ export function ExperimentsView() {
       ) : null}
       <UploadEvalSet open={uploading} onOpenChange={setUploading} onCreated={load} />
       {data.experiments.map((e) => (
-        <Comparison key={e.id} experiment={e} />
+        <Comparison key={e.id} experiment={e} onChanged={load} />
       ))}
     </>
   );

@@ -97,6 +97,32 @@ export async function getEvalRun(storeId: string, id: string) {
   return row ? toRun(row, true) : null;
 }
 
+const STOPPED = "Stopped";
+
+async function ownedRun(storeId: string, id: string) {
+  const [row] = await db.select().from(evalRun).where(and(eq(evalRun.id, id), eq(evalRun.storeId, storeId)));
+  if (!row) throw new EvalSetError("Evaluation not found");
+  return row;
+}
+
+export async function stopEvalRun(storeId: string, id: string) {
+  const run = await ownedRun(storeId, id);
+  if (run.status !== "queued" && run.status !== "running") throw new EvalSetError("Only queued or running evaluations can be stopped");
+  await db.update(evalRun).set({ status: "failed", error: STOPPED, finishedAt: new Date() }).where(eq(evalRun.id, id));
+  const jobs = await queue(QUEUE.eval).getJobs(["waiting", "delayed", "prioritized"]);
+  await Promise.all(jobs.filter((j) => j.data?.runId === id).map((j) => j.remove().catch(() => undefined)));
+}
+
+export async function retryEvalRun(storeId: string, id: string) {
+  const run = await ownedRun(storeId, id);
+  if (run.status !== "failed") throw new EvalSetError("Only failed or stopped evaluations can be retried");
+  await db
+    .update(evalRun)
+    .set({ status: "queued", total: 0, done: 0, scores: {}, inventedClaims: 0, failures: 0, costMicros: 0, inputTokens: 0, outputTokens: 0, p50Ms: 0, notes: [], error: null, finishedAt: null })
+    .where(eq(evalRun.id, id));
+  await queue(QUEUE.eval).add("eval", { runId: id }, { jobId: `${id}__${Date.now().toString(36)}`, attempts: 1 });
+}
+
 export async function listExperiments(storeId: string) {
   const experiments = await db.select().from(experiment).where(eq(experiment.storeId, storeId)).orderBy(desc(experiment.createdAt)).limit(30);
   const runs = experiments.length

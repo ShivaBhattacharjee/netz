@@ -16,6 +16,7 @@ import {
   AccuracyBar,
   OptionSelect,
   PromptPicker,
+  RunActions,
   RunStatus,
   SampleSizeSelect,
   accuracy,
@@ -265,7 +266,10 @@ export function EvaluationsView() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <RunStatus run={r} />
+                      <div className="flex items-center gap-2">
+                        <RunStatus run={r} />
+                        <RunActions run={r} onChanged={load} />
+                      </div>
                       {r.error ? <span className="mt-0.5 block text-xs text-error">{r.error}</span> : null}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{pct(overallAccuracy(r, ["grouping", "variants.sku", "variants.price_cents", "variants.currency", "variants.weight_grams", "variants.options"]))}</td>
