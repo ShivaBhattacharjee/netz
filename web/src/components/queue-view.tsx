@@ -37,6 +37,7 @@ const descriptions: Record<string, string> = {
   "ai.strong": "Builds messy groups and photo-heavy products with the stronger model",
   translate: "Translates titles, descriptions and SEO fields into German and French",
   webhooks: "Delivers signed webhook events to your endpoints",
+  eval: "Scores the pipeline against labelled eval sets",
 };
 
 function useQueueStats(intervalMs: number) {
