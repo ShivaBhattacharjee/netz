@@ -86,19 +86,25 @@ function AddWebhook({ open, onOpenChange, onCreated }: { open: boolean; onOpenCh
         </SheetHeader>
         {secret ? (
           <div className="flex flex-1 flex-col gap-3 p-5">
-            <Label htmlFor="wh-secret">Signing secret</Label>
-            <div className="flex gap-2">
-              <Input id="wh-secret" readOnly value={secret} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
+            <span id="wh-secret-label" className="text-sm font-medium">
+              Signing secret
+            </span>
+            <div className="flex items-stretch border bg-muted/30">
+              <code aria-labelledby="wh-secret-label" className="min-w-0 flex-1 px-3 py-2.5 font-mono text-xs leading-relaxed break-all select-all">
+                {secret}
+              </code>
               <Button
-                variant="outline"
-                size="icon"
+                variant="ghost"
                 aria-label="Copy secret"
+                className="h-auto shrink-0 rounded-none border-l px-3"
                 onClick={() => {
                   void navigator.clipboard.writeText(secret);
                   setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
                 }}
               >
                 {copied ? <Check /> : <Copy />}
+                <span className="text-xs">{copied ? "Copied" : "Copy"}</span>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">Verify the x-catalogforge-signature header with it before trusting a request.</p>
