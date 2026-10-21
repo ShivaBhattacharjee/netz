@@ -20,6 +20,19 @@ const schema = z.object({
 
 export type Env = z.infer<typeof schema>;
 
+const appSchema = z.object({
+  BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters (openssl rand -base64 32)"),
+  BETTER_AUTH_URL: z.string().url(),
+});
+
+export function assertAppEnv() {
+  env();
+  const parsed = appSchema.safeParse(process.env);
+  if (!parsed.success) {
+    throw new Error(`Invalid environment:\n  ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n  ")}`);
+  }
+}
+
 let cached: Env | undefined;
 
 export function env(): Env {

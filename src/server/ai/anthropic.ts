@@ -59,6 +59,20 @@ function anthropic() {
   return client;
 }
 
+/** Resolves each model ID or alias against the models endpoint; returns the ones that do not exist. */
+export async function missingModels(models: string[]) {
+  const missing: string[] = [];
+  for (const id of new Set(models)) {
+    try {
+      await anthropic().models.retrieve(id, {}, { timeout: 15_000 });
+    } catch (error) {
+      if (error instanceof APIError && error.status === 404) missing.push(id);
+      else throw classify(error);
+    }
+  }
+  return missing;
+}
+
 function retryAfterMs(headers: Headers | undefined): number | undefined {
   const value = Number(headers?.get("retry-after"));
   return Number.isFinite(value) && value > 0 ? Math.ceil(value * 1000) : undefined;
