@@ -89,9 +89,9 @@ function AddWebhook({ open, onOpenChange, onCreated }: { open: boolean; onOpenCh
             <span id="wh-secret-label" className="text-sm font-medium">
               Signing secret
             </span>
-            <div className="flex items-stretch border bg-muted/30">
-              <code aria-labelledby="wh-secret-label" className="min-w-0 flex-1 px-3 py-2.5 font-mono text-xs leading-relaxed break-all select-all">
-                {secret}
+            <div className="flex h-10 items-stretch border bg-muted/30">
+              <code aria-labelledby="wh-secret-label" title={secret} className="flex min-w-0 flex-1 items-center px-3 font-mono text-xs select-all">
+                <span className="truncate">{secret}</span>
               </code>
               <Button
                 variant="ghost"
