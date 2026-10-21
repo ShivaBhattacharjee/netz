@@ -1,5 +1,5 @@
-import { PageLoader } from "@/components/page-loader";
+import { RouteLoading } from "@/components/route-loading";
 
 export default function Loading() {
-  return <PageLoader />;
+  return <RouteLoading />;
 }
