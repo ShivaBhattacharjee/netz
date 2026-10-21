@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792542619382,
+      "tag": "0000_previous_spirit",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792543002854,
+      "tag": "0001_great_red_wolf",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792543594913,
+      "tag": "0002_acoustic_dust",
+      "breakpoints": true
+    }
+  ]
+}

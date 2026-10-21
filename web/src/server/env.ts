@@ -1,0 +1,32 @@
+import { z } from "zod";
+
+const schema = z.object({
+  DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url(),
+  AI_MODE: z.enum(["gemini", "mock"]).default("gemini"),
+  GEMINI_API_KEY: z.string().default(""),
+  GEMINI_MODEL_FAST: z.string().min(1),
+  GEMINI_MODEL_STRONG: z.string().min(1),
+  GEMINI_MODEL_TRANSLATE: z.string().min(1),
+  STORAGE_DIR: z.string().default(".data/uploads"),
+  AI_RPM: z.coerce.number().int().positive().optional(),
+  MOCK_LATENCY_MS: z.coerce.number().int().min(0).default(0),
+}).refine((e) => e.AI_MODE === "mock" || e.GEMINI_API_KEY.length > 0, {
+  path: ["GEMINI_API_KEY"],
+  message: "GEMINI_API_KEY is required unless AI_MODE=mock",
+});
+
+export type Env = z.infer<typeof schema>;
+
+let cached: Env | undefined;
+
+export function env(): Env {
+  if (cached) return cached;
+  const parsed = schema.safeParse(process.env);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n  ");
+    throw new Error(`Invalid environment:\n  ${issues}`);
+  }
+  cached = parsed.data;
+  return cached;
+}
