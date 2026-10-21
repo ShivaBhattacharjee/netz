@@ -145,7 +145,7 @@ function Body({ product }: { product: Product }) {
           </Link>
         </Button>
         {!failed && product.status !== "approved" ? (
-          <Button className="ml-auto" onClick={() => actions.approve([product.id])}>
+          <Button variant="success" className="ml-auto" onClick={() => void actions.approve([product.id])}>
             <Check data-icon="inline-start" />
             Approve
           </Button>

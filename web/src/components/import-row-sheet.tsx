@@ -151,7 +151,7 @@ function Footer({ importId, detail }: { importId: string; detail: ImportRowDetai
         </Button>
       ) : null}
       {canApprove ? (
-        <Button className="ml-auto" disabled={busy} onClick={() => void actions.approve([detail.product!.id])}>
+        <Button variant="success" className="ml-auto" disabled={busy} onClick={() => detail.product && void actions.approve([detail.product.id])}>
           <Check data-icon="inline-start" />
           Approve
         </Button>

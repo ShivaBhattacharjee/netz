@@ -61,13 +61,13 @@ function TreeLinks({ items, pathname }: { items: Leaf[]; pathname: string }) {
         const last = i === items.length - 1;
         return (
           <li key={item.href} className="relative py-0.5 pl-4">
-            <span aria-hidden className="absolute top-0 left-0 h-1/2 w-3 rounded-bl-md border-b border-l border-sidebar-foreground/20" />
+            <span aria-hidden className="absolute top-0 left-0 h-1/2 w-3 border-b border-l border-sidebar-foreground/20" />
             {!last ? <span aria-hidden className="absolute top-0 bottom-0 left-0 border-l border-sidebar-foreground/20" /> : null}
             <Link
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                "flex h-8 min-w-0 items-center gap-2 px-2 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
               )}
             >
@@ -161,7 +161,7 @@ function StoreSwitcher({ stores, activeStoreId }: { stores: SidebarStore[]; acti
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent" disabled={pending}>
-              <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <span className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
                 <Boxes className="size-4" />
               </span>
               <span className="grid flex-1 text-left leading-tight">
@@ -216,9 +216,9 @@ function UserMenu({ user }: { user: SidebarUser }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
-              <Avatar className="size-8 rounded-lg">
+              <Avatar className="size-8 rounded-none">
                 {user.image ? <AvatarImage src={user.image} alt="" /> : null}
-                <AvatarFallback className="rounded-lg text-xs">{initials(user.name)}</AvatarFallback>
+                <AvatarFallback className="rounded-none text-xs">{initials(user.name)}</AvatarFallback>
               </Avatar>
               <span className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-sm font-medium">{user.name}</span>

@@ -36,7 +36,7 @@ export function EmptyState({ title, description, action, className }: { title: s
       <CubeArt />
       <h2 className="mt-2 text-base font-medium">{title}</h2>
       <p className="max-w-md text-sm text-muted-foreground">{description}</p>
-      {action ? <div className="mt-2 [&_[data-slot=button]]:h-10 [&_[data-slot=button]]:px-4">{action}</div> : null}
+      {action ? <div className="mt-2 [&_button]:h-10 [&_button]:px-4">{action}</div> : null}
     </div>
   );
 }

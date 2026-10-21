@@ -302,6 +302,7 @@ export function ProductsTable() {
               </Button>
               <RerunDialog ids={selectedIds} onDone={() => table.resetRowSelection()} />
               <Button
+                variant="success"
                 disabled={approvable.length === 0}
                 onClick={() => {
                   void actions.approve(approvable);

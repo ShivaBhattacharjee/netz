@@ -107,10 +107,9 @@ export function LoginPattern() {
 
   return (
     <aside aria-hidden className="relative hidden min-w-0 flex-1 flex-col py-6 pr-6 md:flex">
-      <div className="relative flex-1 overflow-hidden border-t border-border">
+      <div className="relative flex-1 overflow-hidden border-y border-border">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full text-muted-foreground" />
       </div>
-      <div className="min-h-10 border-t border-border" />
     </aside>
   );
 }

@@ -65,21 +65,21 @@ export function RerunDialog({ ids, onDone, trigger }: { ids: string[]; onDone?: 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5">
           <div className="flex flex-col gap-2">
             <Label>Model</Label>
-            <RadioGroup value={model} onValueChange={setModel} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <RadioGroup value={model} onValueChange={setModel} className="flex flex-col gap-2">
               {RERUN_MODELS.map((m) => (
                 <Label
                   key={m.id}
                   htmlFor={m.id}
                   className={cn(
-                    "flex cursor-pointer flex-col items-start gap-1 rounded-lg border p-3 font-normal transition-colors hover:bg-muted/50",
+                    "flex cursor-pointer items-center gap-3 border px-3 py-2.5 font-normal transition-colors hover:bg-muted/50",
                     model === m.id && "border-foreground bg-muted/50",
                   )}
                 >
-                  <span className="flex w-full items-center justify-between">
+                  <RadioGroupItem id={m.id} value={m.id} />
+                  <span className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
                     <span className="text-sm font-medium">{m.label}</span>
-                    <RadioGroupItem id={m.id} value={m.id} />
+                    <span className="truncate text-xs text-muted-foreground">{m.hint}</span>
                   </span>
-                  <span className="text-xs text-muted-foreground">{m.hint}</span>
                 </Label>
               ))}
             </RadioGroup>
