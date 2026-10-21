@@ -1,6 +1,6 @@
 import type { Product } from "./types";
 
-const csvColumns = [
+const catalogColumns = [
   "handle",
   "title",
   "status",
@@ -17,17 +17,20 @@ const csvColumns = [
   "source_rows",
 ] as const;
 
+function defuse(value: string | number | null): string | number | null {
+  return typeof value === "string" && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
 function csvCell(value: string | number | null): string {
-  let s = value === null ? "" : String(value);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  const s = value === null ? "" : String(defuse(value));
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function toCsv(products: Product[]): string {
-  const lines = [csvColumns.join(",")];
+export function catalogRows(products: Product[]) {
+  const rows: Record<(typeof catalogColumns)[number], string | number | null>[] = [];
   for (const p of products) {
     for (const v of p.variants) {
-      const record: Record<(typeof csvColumns)[number], string | number | null> = {
+      const record: (typeof rows)[number] = {
         handle: p.handle,
         title: p.title,
         status: p.status,
@@ -45,10 +48,18 @@ export function toCsv(products: Product[]): string {
         review_reason: p.review_reason,
         source_rows: p.source_rows.join(" "),
       };
-      lines.push(csvColumns.map((c) => csvCell(record[c])).join(","));
+      rows.push(Object.fromEntries(catalogColumns.map((c) => [c, defuse(record[c])])) as typeof record);
     }
   }
-  return lines.join("\n");
+  return rows;
+}
+
+export async function toXlsx(products: Product[]): Promise<ArrayBuffer> {
+  const XLSX = await import("xlsx");
+  const sheet = XLSX.utils.json_to_sheet(catalogRows(products), { header: [...catalogColumns] });
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Catalog");
+  return XLSX.write(book, { type: "array", bookType: "xlsx" });
 }
 
 export function toJson(products: Product[]): string {
@@ -137,7 +148,7 @@ export function toShopifyCsv(products: Product[], vendor: string): string {
   return lines.join("\n");
 }
 
-export function download(filename: string, content: string, type: string) {
+export function download(filename: string, content: BlobPart, type: string) {
   const bom = type === "text/csv" ? "\uFEFF" : "";
   const url = URL.createObjectURL(new Blob([bom + content], { type: `${type};charset=utf-8` }));
   const a = document.createElement("a");

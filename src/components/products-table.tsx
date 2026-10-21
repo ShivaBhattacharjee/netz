@@ -36,7 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { actions, useProducts, useProductsReady } from "@/lib/data/store";
-import { download, toCsv, toJson, toShopifyCsv } from "@/lib/export";
+import { download, toJson, toShopifyCsv, toXlsx } from "@/lib/export";
 import { formatMoney, formatNumber, minConfidence } from "@/lib/format";
 import type { Product, ProductStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -226,10 +226,10 @@ export function ProductsTable() {
   });
   const filtered = table.getFilteredRowModel().rows.map((r) => r.original);
 
-  function exportAs(kind: "csv" | "json" | "shopify") {
+  async function exportAs(kind: "csv" | "xlsx" | "json") {
     const rows = selectedIds.length ? products.filter((p) => rowSelection[p.id]) : filtered;
-    if (kind === "csv") download("catalog.csv", toCsv(rows), "text/csv");
-    else if (kind === "shopify") download("shopify-products.csv", toShopifyCsv(rows, activeStore.name), "text/csv");
+    if (kind === "csv") download("shopify-products.csv", toShopifyCsv(rows, activeStore.name), "text/csv");
+    else if (kind === "xlsx") download("catalog.xlsx", await toXlsx(rows), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     else download("catalog.json", toJson(rows), "application/json");
   }
 
@@ -272,9 +272,9 @@ export function ProductsTable() {
                 {selectedIds.length ? `${formatNumber(selectedIds.length)} selected` : `${formatNumber(filtered.length)} filtered products`}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => exportAs("csv")}>CSV</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => exportAs("csv")}>CSV (Shopify)</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => exportAs("xlsx")}>Excel (.xlsx)</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => exportAs("json")}>JSON</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => exportAs("shopify")}>Shopify product CSV</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         }

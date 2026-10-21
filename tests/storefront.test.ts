@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCsv, toShopifyCsv } from "@/lib/export";
+import { catalogRows, toShopifyCsv } from "@/lib/export";
 import { formatMoney } from "@/lib/format";
 import { countryFor, localized, localizedAttribute } from "@/lib/locale";
 import { shopHref } from "@/server/storefront";
@@ -52,10 +52,11 @@ describe("exports (1.19)", () => {
   const p = product({ title: "=cmd|' /C calc'!A0", tags: ["+SUM(1+1)"], description_html: "@SUM(A1)" });
   const startsWithFormula = (line: string) => line.split(",").some((cell) => /^"?[=+@-]/.test(cell));
 
-  it("prefixes formula cells in the CSV export", () => {
-    const row = toCsv([p]).split("\n")[1];
-    expect(row).toContain("'=cmd|");
-    expect(startsWithFormula(row)).toBe(false);
+  it("prefixes formula cells in the Excel export", () => {
+    const [row] = catalogRows([p]);
+    expect(row.title).toBe("'=cmd|' /C calc'!A0");
+    expect(row.tags).toBe("'+SUM(1+1)");
+    expect(row.description_html).toBe("'@SUM(A1)");
   });
 
   it("prefixes formula cells in the Shopify export", () => {
