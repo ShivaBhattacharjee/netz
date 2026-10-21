@@ -43,6 +43,13 @@
       "when": 1792546324886,
       "tag": "0005_fancy_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792546569852,
+      "tag": "0006_crazy_alice",
+      "breakpoints": true
     }
   ]
 }

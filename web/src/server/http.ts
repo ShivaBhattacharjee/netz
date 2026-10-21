@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { type ApiContext, getApiContext } from "@/lib/auth/session";
 import { ApiKeyInputError } from "./api-keys";
+import { EvalSetError } from "./evals/sets";
 import { ImportInputError } from "./imports";
 import { ProductInputError } from "./products";
 import { WebhookInputError } from "./webhooks";
@@ -14,7 +15,7 @@ export function withStore<P>(handler: (ctx: ApiContext, request: Request, params
     try {
       return await handler(ctx, request, await params);
     } catch (error) {
-      if (error instanceof ImportInputError || error instanceof ProductInputError || error instanceof WebhookInputError || error instanceof ApiKeyInputError) {
+      if (error instanceof ImportInputError || error instanceof ProductInputError || error instanceof WebhookInputError || error instanceof ApiKeyInputError || error instanceof EvalSetError) {
         return NextResponse.json({ error: error.message }, { status: error.message.endsWith("not found") ? 404 : 400 });
       }
       if (error instanceof z.ZodError) {

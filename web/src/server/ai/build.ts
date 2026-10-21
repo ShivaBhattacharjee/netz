@@ -36,7 +36,7 @@ const jsonSchema = toResponseSchema(z.toJSONSchema(buildOutputSchema) as Record<
 export interface AiCallRecord {
   model: string;
   promptVersion: string;
-  task: "build" | "repair" | "translate";
+  task: "build" | "repair" | "translate" | "eval";
   usage: Usage;
   latencyMs: number;
   ok: boolean;
@@ -99,8 +99,12 @@ function parseOutput(text: string) {
   return { ok: true as const, value: parsed.data };
 }
 
-export async function generateBuild(group: GroupInput, model: string, opts: { withPhotos: boolean; maxOutputTokens: number; note?: string }) {
-  const prompt = loadPrompt("build-product");
+export async function generateBuild(
+  group: GroupInput,
+  model: string,
+  opts: { withPhotos: boolean; maxOutputTokens: number; note?: string; prompt?: string },
+) {
+  const prompt = loadPrompt(opts.prompt ?? "build-product");
   const calls: AiCallRecord[] = [];
   const record = (task: AiCallRecord["task"], version: string, usage: Usage, latencyMs: number, ok: boolean, errorCode: string | null) =>
     calls.push({ model, promptVersion: version, task, usage, latencyMs, ok, errorCode });

@@ -3,6 +3,7 @@ import { type Job, type Processor, Worker } from "bullmq";
 import { db } from "@/db";
 import { env } from "@/server/env";
 import { runBuild, runRerun } from "@/server/jobs/build";
+import { runEval } from "@/server/jobs/eval";
 import { runParse } from "@/server/jobs/parse";
 import { reconcile } from "@/server/jobs/reconcile";
 import { runTranslate } from "@/server/jobs/translate";
@@ -19,6 +20,7 @@ const CONCURRENCY: Record<QueueName, number> = {
   [QUEUE.aiStrong]: Number(process.env.AI_STRONG_CONCURRENCY ?? 6),
   [QUEUE.translate]: Number(process.env.TRANSLATE_CONCURRENCY ?? 8),
   [QUEUE.webhooks]: Number(process.env.WEBHOOK_CONCURRENCY ?? 4),
+  [QUEUE.eval]: 1,
 };
 
 const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>> = {
@@ -27,6 +29,7 @@ const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>
   [QUEUE.aiStrong]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
   [QUEUE.translate]: runTranslate,
   [QUEUE.webhooks]: (job) => deliver(job.data, job.attemptsMade + 1),
+  [QUEUE.eval]: (job) => runEval(job),
 };
 
 const selected = (process.env.WORKER_QUEUES?.split(",").map((q) => q.trim()).filter(Boolean) ?? Object.values(QUEUE)) as QueueName[];

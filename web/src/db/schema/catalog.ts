@@ -313,3 +313,49 @@ export const apiKey = pgTable(
   },
   (t) => [uniqueIndex("api_key_hash_uq").on(t.hash), index("api_key_store_idx").on(t.storeId)],
 );
+
+export const evalStatus = pgEnum("eval_status", ["queued", "running", "completed", "failed"]);
+
+export type FieldScores = Record<string, { correct: number; total: number }>;
+
+export const experiment = pgTable(
+  "experiment",
+  {
+    id: text("id").primaryKey(),
+    storeId: storeRef(),
+    name: text("name").notNull(),
+    set: text("set").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("experiment_store_idx").on(t.storeId)],
+);
+
+export const evalRun = pgTable(
+  "eval_run",
+  {
+    id: text("id").primaryKey(),
+    storeId: storeRef(),
+    experimentId: text("experiment_id").references(() => experiment.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    set: text("set").notNull(),
+    model: text("model").notNull(),
+    prompt: text("prompt").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    sampleLimit: integer("sample_limit").notNull(),
+    status: evalStatus("status").notNull().default("queued"),
+    total: integer("total").notNull().default(0),
+    done: integer("done").notNull().default(0),
+    scores: jsonb("scores").$type<FieldScores>().notNull().default({}),
+    inventedClaims: integer("invented_claims").notNull().default(0),
+    failures: integer("failures").notNull().default(0),
+    costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    p50Ms: integer("p50_ms").notNull().default(0),
+    notes: jsonb("notes").$type<string[]>().notNull().default([]),
+    error: text("error"),
+    createdAt: createdAt(),
+    finishedAt: timestamp("finished_at"),
+  },
+  (t) => [index("eval_run_store_created_idx").on(t.storeId, t.createdAt), index("eval_run_experiment_idx").on(t.experimentId)],
+);

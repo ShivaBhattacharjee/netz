@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 export interface Prompt {
@@ -36,4 +36,12 @@ export function render(template: string, vars: Record<string, string>) {
     if (!template.includes(`{{${key}}}`)) throw new Error(`Prompt has no {{${key}}} slot`);
   }
   return template.replace(/\{\{([a-z_]+)\}\}/g, (match, key: string) => (key in vars ? vars[key] : match));
+}
+
+export function buildPromptVariants() {
+  return readdirSync(DIR)
+    .filter((f) => /^build-product.*\.md$/.test(f))
+    .map((f) => f.replace(/\.md$/, ""))
+    .sort()
+    .map((name) => ({ name, version: loadPrompt(name).version }));
 }

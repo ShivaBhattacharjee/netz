@@ -7,6 +7,7 @@ export const QUEUE = {
   aiStrong: "ai.strong",
   translate: "translate",
   webhooks: "webhooks",
+  eval: "eval",
 } as const;
 
 export type QueueName = (typeof QUEUE)[keyof typeof QUEUE];

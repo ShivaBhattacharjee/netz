@@ -153,3 +153,42 @@ export interface WebhookDelivery {
   error: string | null;
   at: string;
 }
+
+export interface EvalRun {
+  id: string;
+  experiment_id: string | null;
+  label: string;
+  set: string;
+  model: string;
+  prompt: string;
+  prompt_version: string;
+  sample_limit: number;
+  status: "queued" | "running" | "completed" | "failed";
+  total: number;
+  done: number;
+  scores: Record<string, { correct: number; total: number }>;
+  invented_claims: number;
+  failures: number;
+  cost_micros: number;
+  input_tokens: number;
+  output_tokens: number;
+  p50_ms: number;
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
+  notes?: string[];
+}
+
+export interface EvalOptions {
+  sets: { name: string; products: number; rows: number }[];
+  prompts: { name: string; version: string }[];
+  models: { id: string; label: string; hint: string }[];
+}
+
+export interface Experiment {
+  id: string;
+  name: string;
+  set: string;
+  created_at: string;
+  variants: EvalRun[];
+}
