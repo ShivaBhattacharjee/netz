@@ -56,7 +56,8 @@ async function persist(group: typeof importGroup.$inferSelect, input: GroupInput
         .set({ missingSince: group.importId })
         .where(and(inArray(variant.id, missing.map((v) => v.id)), isNull(variant.missingSince)));
     }
-    const status = reasons.length > 0 ? ("needs_review" as const) : ("ready" as const);
+    const status = reasons.length > 0 ? ("needs_review" as const) : prior?.status === "approved" ? ("approved" as const) : ("ready" as const);
+    const rowStatus = status === "needs_review" ? ("needs_review" as const) : ("done" as const);
     const reviewReason = reasons.join("; ") || null;
     const manual = new Set(prior?.manualFields ?? []);
     const keep = <T>(field: string, next: T, current: T | undefined) => (manual.has(field) && current !== undefined ? current : next);
@@ -104,10 +105,10 @@ async function persist(group: typeof importGroup.$inferSelect, input: GroupInput
 
     await tx
       .update(sourceRow)
-      .set({ status: status === "ready" ? "done" : "needs_review", reason: reasons[0] ?? null, productId })
+      .set({ status: rowStatus, reason: reasons[0] ?? null, productId })
       .where(and(eq(sourceRow.importId, group.importId), eq(sourceRow.groupKey, group.groupKey), eq(sourceRow.status, "pending")));
 
-    await tx.update(importGroup).set({ status: status === "ready" ? "done" : "needs_review", reason: reviewReason, productId }).where(eq(importGroup.id, group.id));
+    await tx.update(importGroup).set({ status: rowStatus, reason: reviewReason, productId }).where(eq(importGroup.id, group.id));
     await recordCalls(tx, calls, { storeId: group.storeId, importId: group.importId, groupId: group.id, productId });
 
     const [saved] = await tx.select().from(product).where(eq(product.id, productId));
