@@ -133,6 +133,14 @@ async function failGroup(group: typeof importGroup.$inferSelect, reason: string,
   log.warn("group failed", { importId: group.importId, groupId: group.id, reason });
 }
 
+/** Called once BullMQ has given up on a build job (retries used up or stalled too often) so its rows do not stay pending. */
+export async function abandonBuild(job: Job<BuildJob>, error: Error) {
+  const [group] = await db.select().from(importGroup).where(eq(importGroup.id, job.data.groupId));
+  if (!group || group.status !== "pending") return;
+  await failGroup(group, `Gave up after ${job.attemptsMade} attempt(s): ${error.message}`, []);
+  await refreshCounts(group.importId);
+}
+
 export async function runBuild(job: Job<BuildJob>, worker: Worker) {
   const { importId, groupId } = job.data;
   const [group] = await db.select().from(importGroup).where(eq(importGroup.id, groupId));

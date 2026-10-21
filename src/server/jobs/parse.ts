@@ -1,11 +1,11 @@
 import type { Job } from "bullmq";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { importGroup, importJob, photo, product, sourceRow, upload } from "@/db/schema";
+import { importGroup, importJob, photo, product, sourceRow, upload, variant } from "@/db/schema";
 import { newId } from "../ids";
 import { log } from "../log";
 import { detectHeader } from "../pipeline/headers";
-import { buildGroups, cleanRows, groupInputHash, sheetDecimalHint } from "../pipeline/group";
+import { type GroupInput, type RowOutcome, buildGroups, cleanRows, groupInputHash, sheetDecimalHint } from "../pipeline/group";
 import { type PhotoCandidate, PhotoArchiveError, extractZip, processPhotos } from "../pipeline/photos";
 import { chooseRoute } from "../pipeline/route";
 import { SheetError, parseSheet } from "../pipeline/sheet";
@@ -32,6 +32,33 @@ async function* photoCandidates(uploads: (typeof upload.$inferSelect)[]): AsyncG
   }
 }
 
+async function adoptExistingKeys(storeId: string, groups: GroupInput[], outcomes: RowOutcome[]) {
+  const skus = groups.flatMap((g) => g.variants.filter((v) => !v.sku_derived).map((v) => v.sku));
+  const owners = new Map<string, string>();
+  for (const part of chunks(skus, INSERT_CHUNK)) {
+    const rows = await db
+      .select({ sku: variant.sku, groupKey: product.groupKey })
+      .from(variant)
+      .innerJoin(product, eq(product.id, variant.productId))
+      .where(and(eq(variant.storeId, storeId), inArray(variant.sku, part)));
+    for (const r of rows) owners.set(r.sku, r.groupKey);
+  }
+
+  const taken = new Set(groups.map((g) => g.group_key));
+  const renamed = new Map<string, string>();
+  for (const g of groups) {
+    const keys = new Set(g.variants.flatMap((v) => owners.get(v.sku) ?? []));
+    if (keys.size !== 1) continue;
+    const [existing] = keys;
+    if (existing === g.group_key || taken.has(existing)) continue;
+    taken.delete(g.group_key);
+    taken.add(existing);
+    renamed.set(g.group_key, existing);
+    g.group_key = existing;
+  }
+  for (const o of outcomes) if (o.groupKey && renamed.has(o.groupKey)) o.groupKey = renamed.get(o.groupKey)!;
+}
+
 export async function enqueuePendingGroups(importId: string) {
   const pending = await db
     .select({ id: importGroup.id, route: importGroup.route })
@@ -39,6 +66,15 @@ export async function enqueuePendingGroups(importId: string) {
     .where(and(eq(importGroup.importId, importId), eq(importGroup.status, "pending")));
   if (pending.length > 0) await enqueueBuilds(importId, pending);
   return pending.length;
+}
+
+/** Called once BullMQ has given up on a parse job; an import whose rows were saved is left for the reconciler. */
+export async function abandonParse(job: Job<ParseJob>, error: Error) {
+  const { importId } = job.data;
+  const [imp] = await db.select({ status: importJob.status }).from(importJob).where(eq(importJob.id, importId));
+  if (!imp || !["queued", "processing"].includes(imp.status)) return;
+  const [saved] = await db.select({ id: importGroup.id }).from(importGroup).where(eq(importGroup.importId, importId)).limit(1);
+  if (!saved) await failImport(importId, `Import failed: ${error.message}`);
 }
 
 export async function runParse(job: Job<ParseJob>) {
@@ -77,6 +113,7 @@ export async function runParse(job: Job<ParseJob>) {
     const hint = sheetDecimalHint(dataRows.map((r) => r.raw), header);
     const cleaned = cleanRows(dataRows, header, imp.defaultCurrency, hint);
     const { outcomes, groups } = buildGroups(cleaned, imp.defaultCurrency);
+    await adoptExistingKeys(imp.storeId, groups, outcomes);
     const outcomeByRow = new Map(outcomes.map((o) => [o.row, o]));
 
     const explicit = new Map<string, string>();

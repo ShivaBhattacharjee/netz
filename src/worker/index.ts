@@ -5,10 +5,10 @@ import { assertMigrated } from "@/db/migrations";
 import { RERUN_MODELS } from "@/lib/models";
 import { classify, missingModels } from "@/server/ai/anthropic";
 import { type Env, env } from "@/server/env";
-import { runBuild, runRerun } from "@/server/jobs/build";
+import { abandonBuild, runBuild, runRerun } from "@/server/jobs/build";
 import { runEval } from "@/server/jobs/eval";
 import { pauseAi } from "@/server/jobs/gate";
-import { runParse } from "@/server/jobs/parse";
+import { abandonParse, runParse } from "@/server/jobs/parse";
 import { reconcile } from "@/server/jobs/reconcile";
 import { runTranslate } from "@/server/jobs/translate";
 import { log } from "@/server/log";
@@ -24,6 +24,12 @@ const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>
   [QUEUE.webhooks]: (job) => deliver(job.data, job.attemptsMade + 1),
   [QUEUE.eval]: (job) => runEval(job),
 };
+
+async function settleFailed(name: QueueName, job: Job, error: Error) {
+  if (!(await job.isFailed())) return;
+  if (name === QUEUE.parse) await abandonParse(job, error);
+  else if ((name === QUEUE.aiCheap || name === QUEUE.aiStrong) && job.name === "build") await abandonBuild(job, error);
+}
 
 const isAiQueue = (name: QueueName) => name === QUEUE.aiCheap || name === QUEUE.aiStrong || name === QUEUE.translate;
 
@@ -74,6 +80,7 @@ async function main() {
     worker.on("failed", (job, error) => {
       if (error?.name === "RateLimitError") return;
       log.warn("job failed", { queue: name, jobId: job?.id, attempt: job?.attemptsMade, error: error.message });
+      if (job) void settleFailed(name, job, error).catch((e) => log.error("could not settle failed job", { queue: name, jobId: job.id, error: (e as Error).message }));
     });
     worker.on("error", (error) => log.error("worker error", { queue: name, error: error.message }));
     return worker;
