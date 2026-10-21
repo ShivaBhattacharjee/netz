@@ -31,19 +31,28 @@ export interface Labels {
 
 export class EvalSetError extends Error {}
 
+const isSet = (dir: string) => existsSync(path.join(dir, "labels.json")) && existsSync(path.join(dir, "supplier-sheet.csv"));
+
+function setNames(): string[] {
+  const subdirs = (rel: string) =>
+    readdirSync(path.join(DIR, rel), { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => (rel ? `${rel}/${d.name}` : d.name));
+  return subdirs("").flatMap((name) => (isSet(path.join(DIR, name)) ? [name] : subdirs(name).filter((n) => isSet(path.join(DIR, n)))));
+}
+
 export function listEvalSets() {
   if (!existsSync(DIR)) return [];
-  return readdirSync(DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && existsSync(path.join(DIR, d.name, "labels.json")) && existsSync(path.join(DIR, d.name, "supplier-sheet.csv")))
-    .map((d) => {
-      const labels = JSON.parse(readFileSync(path.join(DIR, d.name, "labels.json"), "utf8")) as Labels;
-      return { name: d.name, products: labels.products.length, rows: labels.total_rows };
+  return setNames()
+    .map((name) => {
+      const labels = JSON.parse(readFileSync(path.join(DIR, name, "labels.json"), "utf8")) as Labels;
+      return { name, products: labels.products.length, rows: labels.total_rows };
     })
     .sort((a, b) => a.products - b.products);
 }
 
 export function loadEvalSet(name: string) {
-  if (!/^[a-z0-9-]+$/.test(name)) throw new EvalSetError("Unknown eval set");
+  if (!/^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(name)) throw new EvalSetError("Unknown eval set");
   const dir = path.join(DIR, name);
   if (!existsSync(path.join(dir, "labels.json"))) throw new EvalSetError(`Eval set "${name}" was not found in ${DIR}`);
   return {
