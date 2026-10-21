@@ -87,6 +87,7 @@ Without `ANTHROPIC_API_KEY` the whole pipeline runs in mock mode: imports, revie
 | `pnpm db:generate` / `pnpm db:migrate` | create and apply Drizzle migrations |
 | `pnpm db:studio` | browse the database |
 | `pnpm lint` | ESLint |
+| `pnpm test` | Vitest suite in `tests/`: price parsing, cleaning, grouping, photo matching, file safety, claim checks, translation masking, exports, and 100% cleaning accuracy on every eval set; no database or AI needed |
 
 ## Deploy on Render
 
@@ -151,6 +152,7 @@ src/
   worker/         worker entry point
 prompts/          versioned prompts (build-product, translate, repair-json)
 drizzle/          SQL migrations
+tests/            Vitest suite (pnpm test)
 evals/            sample sheets, photos and labels for testing
 scripts/          eval generator, fake Anthropic API for failure tests
 ```

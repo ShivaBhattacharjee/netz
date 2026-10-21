@@ -27,9 +27,13 @@ Useful while testing:
 - Postgres shell: `docker compose exec postgres psql -U netz netz`. Redis shell: `docker compose exec redis redis-cli`.
 - API key: create one under Settings → API keys; call with `-H "authorization: Bearer cf_…"`.
 
+## Automated checks
+
+`pnpm test` runs the parts of these cases that do not need the running app: 68 Vitest tests in `tests/`, named after the edge case they cover (for example "keeps sequential item numbers apart when the titles differ (1.26)"). They need no database, Redis or AI key and take about a second. The results recorded below as "Pass" or "Partly passed" come from these checks.
+
 ## Offline run, 21 Oct 2026
 
-The cleaning pipeline (parse, header detection, cleaning, grouping) was run directly against every eval sheet and scored against its labels with `scoreCleaning`. No database, queue or AI was involved, so these results cover the parts of each case that do not need the running app.
+The cleaning pipeline (parse, header detection, cleaning, grouping) was run directly against every eval sheet and scored against its labels with `scoreCleaning` (`tests/evals.test.ts`). No database, queue or AI was involved, so these results cover the parts of each case that do not need the running app.
 
 | Set | Rows | Products | Grouping | SKUs | Prices | Currency | Weights | Options | Time |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
