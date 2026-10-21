@@ -118,7 +118,7 @@ function AddWebhook({ open, onOpenChange, onCreated }: { open: boolean; onOpenCh
                   <Label
                     key={e.id}
                     className={cn(
-                      "flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal transition-colors hover:bg-muted/50",
+                      "flex cursor-pointer items-start gap-3 border p-3 font-normal transition-colors hover:bg-muted/50",
                       checked && "border-foreground/40 bg-muted/40",
                     )}
                   >
@@ -211,7 +211,7 @@ export function WebhooksView() {
                     <span className="truncate font-mono text-sm">{h.url}</span>
                     <span className="flex flex-wrap gap-1.5">
                       {h.events.map((e) => (
-                        <span key={e} className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                        <span key={e} className="bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                           {e}
                         </span>
                       ))}

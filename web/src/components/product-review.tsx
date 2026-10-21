@@ -140,7 +140,7 @@ function VariantRow({ productId, variant, manual }: { productId: string; variant
       <td className="px-2 py-1.5">
         <select
           aria-label={`Currency for ${variant.sku}`}
-          className="h-8 w-full rounded-md border bg-transparent px-2 text-sm"
+          className="h-8 w-full border bg-transparent px-2 text-sm"
           value={currency}
           onChange={(e) => {
             setCurrency(e.target.value);

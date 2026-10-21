@@ -61,8 +61,8 @@ function TreeLinks({ items, pathname }: { items: Leaf[]; pathname: string }) {
         const last = i === items.length - 1;
         return (
           <li key={item.href} className="relative py-0.5 pl-4">
-            <span aria-hidden className="absolute top-0 left-0 h-1/2 w-3 border-b border-l border-sidebar-foreground/20" />
-            {!last ? <span aria-hidden className="absolute top-0 bottom-0 left-0 border-l border-sidebar-foreground/20" /> : null}
+            <span aria-hidden className="absolute top-0 left-0 h-1/2 w-3 rounded-bl-md border-b border-l border-sidebar-foreground/20" />
+            {!last ? <span aria-hidden className="absolute top-1/2 bottom-0 left-0 border-l border-sidebar-foreground/20" /> : null}
             <Link
               href={item.href}
               aria-current={active ? "page" : undefined}

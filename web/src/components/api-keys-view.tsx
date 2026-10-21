@@ -205,7 +205,7 @@ export function ApiKeysView() {
         </Panel>
       ) : null}
 
-      {keys ? (
+      {keys?.length ? (
         <Panel title="Quick start" icon={Terminal} bodyClassName="p-0">
           <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-muted-foreground">{quickStart(origin)}</pre>
         </Panel>
