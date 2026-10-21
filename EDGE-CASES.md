@@ -160,3 +160,5 @@ Nothing the browser sends is trusted. These apply to every API route, server act
 | 8.5 | Finished jobs pile up in Redis | `removeOnComplete` / `removeOnFail` with age and count caps. History lives in Postgres. | Handled, not tested |
 | 8.6 | Postgres connections run out | One pool per process (reused across hot reloads in dev); worker pool size capped so imports cannot starve the app. | Partly handled (single pool, `DB_POOL_MAX`) |
 | 8.7 | Schema change on deploy | Drizzle migrations run before the new code starts; changes are additive first, destructive later. | Planned |
+| 8.8 | Many dashboard tabs open on live progress | `GET /api/imports/stream` (SSE) is scoped to the signed-in user's active store. Each app process holds one Redis subscriber and fans events out in memory, so connections do not each open a Redis connection. 15 s heartbeat keeps proxies from closing idle streams; the browser reconnects after 3 s. | Handled, not tested |
+
