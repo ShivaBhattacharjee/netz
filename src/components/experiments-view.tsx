@@ -13,7 +13,19 @@ import type { EvalOptions, EvalRun, Experiment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "./common";
 import { EmptyState } from "./empty-state";
-import { OptionSelect, PromptPicker, RunStatus, SAMPLE_SIZES, accuracy, fieldLabel, modelOptions, overallAccuracy, pct, setOptions } from "./eval-common";
+import {
+  OptionSelect,
+  PromptPicker,
+  RunStatus,
+  SampleSizeSelect,
+  accuracy,
+  fieldLabel,
+  isValidSampleSize,
+  modelOptions,
+  overallAccuracy,
+  pct,
+  setOptions,
+} from "./eval-common";
 import { PageLoader } from "./page-loader";
 
 interface Variant {
@@ -59,7 +71,7 @@ function NewExperiment({
   }
 
   const variantFields = (key: "A" | "B", value: Variant, set: (v: Variant) => void) => (
-    <fieldset className="flex flex-col gap-3 border p-3">
+    <fieldset className="flex min-w-0 flex-col gap-3 border p-3">
       <legend className="px-1 text-sm font-medium">Variant {key}</legend>
       <OptionSelect id={`exp-${key}-model`} label="Model" value={value.model} onChange={(model) => set({ ...value, model })} options={modelOptions(options)} />
       <PromptPicker id={`exp-${key}-prompt`} options={options} value={value.prompt} onChange={(prompt) => set({ ...value, prompt })} onPromptsChanged={onPromptsChanged} />
@@ -68,7 +80,7 @@ function NewExperiment({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-3xl">
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-3xl xl:max-w-4xl">
         <SheetHeader className="border-b p-5">
           <SheetTitle className="text-lg">New experiment</SheetTitle>
           <SheetDescription>Both variants build the same products from a labelled set, so the comparison is fair. AI calls are billed.</SheetDescription>
@@ -79,7 +91,13 @@ function NewExperiment({
             <Input id="exp-name" placeholder="Haiku vs Sonnet on messy rows" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
           </div>
           <OptionSelect id="exp-set" label="Labelled set" value={set} onChange={setSet} options={setOptions(options)} />
-          <OptionSelect id="exp-limit" label="Products per variant" value={limit} onChange={setLimit} options={SAMPLE_SIZES} />
+          <SampleSizeSelect
+            id="exp-limit"
+            label="Products per variant"
+            value={limit}
+            onChange={setLimit}
+            available={options.sets.find((s) => s.name === set)?.products}
+          />
           <div className="grid gap-4 md:grid-cols-2">
             {variantFields("A", a, setA)}
             {variantFields("B", b, setB)}
@@ -90,7 +108,7 @@ function NewExperiment({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!name.trim() || !set || same || busy} onClick={() => void start()}>
+          <Button disabled={!name.trim() || !set || same || !isValidSampleSize(limit) || busy} onClick={() => void start()}>
             {busy ? "Starting" : "Start experiment"}
           </Button>
         </SheetFooter>

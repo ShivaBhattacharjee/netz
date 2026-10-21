@@ -28,7 +28,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: R
         disabled: "text-muted-foreground/40 [&>button]:pointer-events-none",
         range_start: "bg-primary text-primary-foreground [&>button]:hover:bg-primary",
         range_end: "bg-primary text-primary-foreground [&>button]:hover:bg-primary",
-        range_middle: "bg-muted [&>button]:hover:bg-muted",
+        range_middle: "bg-muted! text-foreground! [&>button]:hover:bg-foreground/10",
         selected: "bg-primary text-primary-foreground",
         ...classNames,
       }}

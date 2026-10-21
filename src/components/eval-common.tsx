@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +29,61 @@ export const FIELD_LABELS: Record<string, string> = {
 
 export const AI_FIELDS = ["category", "status", "claims.recall"];
 
-export const SAMPLE_SIZES = [
+const MAX_SAMPLE = 10_000;
+const CUSTOM = "custom";
+
+const SAMPLE_SIZES = [
   { value: "25", label: "25 products" },
   { value: "100", label: "100 products" },
   { value: "500", label: "500 products" },
-  { value: "10000", label: "All products" },
+  { value: String(MAX_SAMPLE), label: "All products" },
+  { value: CUSTOM, label: "Custom…" },
 ];
+
+export function isValidSampleSize(value: string) {
+  const n = Number(value);
+  return /^\d+$/.test(value) && n >= 1 && n <= MAX_SAMPLE;
+}
+
+export function SampleSizeSelect({ id, label, value, onChange, available }: { id: string; label: string; value: string; onChange: (v: string) => void; available?: number }) {
+  const [custom, setCustom] = useState(() => !SAMPLE_SIZES.some((o) => o.value === value));
+  const max = Math.min(available ?? MAX_SAMPLE, MAX_SAMPLE);
+  const invalid = custom && !isValidSampleSize(value);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <OptionSelect
+        id={id}
+        label={label}
+        value={custom ? CUSTOM : value}
+        onChange={(v) => {
+          setCustom(v === CUSTOM);
+          if (v !== CUSTOM) onChange(v);
+        }}
+        options={SAMPLE_SIZES}
+      />
+      {custom ? (
+        <>
+          <Input
+            id={`${id}-custom`}
+            aria-label={`${label}, custom number`}
+            inputMode="numeric"
+            placeholder={`1 to ${formatNumber(max)}`}
+            value={value}
+            aria-invalid={invalid || undefined}
+            autoFocus
+            onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+          />
+          {invalid ? (
+            <p className="text-xs text-error">Enter a whole number from 1 to {formatNumber(MAX_SAMPLE)}.</p>
+          ) : available !== undefined && Number(value) > available ? (
+            <p className="text-xs text-muted-foreground">This set has {formatNumber(available)} products, so all of them are used.</p>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
 
 export function fieldLabel(field: string) {
   return FIELD_LABELS[field] ?? (field.startsWith("attributes.") ? `Attribute: ${field.slice(11)}` : field);
@@ -94,7 +143,7 @@ export function OptionSelect({
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id} className="w-full">
+        <SelectTrigger id={id} className="w-full min-w-0 overflow-hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -134,7 +183,7 @@ function fetchPrompt(name: string) {
   return api<PromptDetail>(`/api/prompts/${encodeURIComponent(name)}`);
 }
 
-export function PromptSource({ name, onDeleted }: { name: string; onDeleted?: () => void }) {
+export function PromptSource({ name, onDeleted, actions }: { name: string; onDeleted?: () => void; actions?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState<PromptDetail | null>(null);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
@@ -174,6 +223,12 @@ export function PromptSource({ name, onDeleted }: { name: string; onDeleted?: ()
             >
               Delete
             </button>
+          </>
+        ) : null}
+        {actions ? (
+          <>
+            <span>·</span>
+            {actions}
           </>
         ) : null}
       </p>
@@ -275,21 +330,19 @@ export function PromptPicker({
   const [creating, setCreating] = useState(false);
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-end gap-2">
-        <div className="min-w-0 flex-1">
-          <OptionSelect id={id} label="Prompt" value={value} onChange={onChange} options={promptOptions(options)} />
-        </div>
-        <Button variant="outline" className="h-10 px-4" onClick={() => setCreating(true)}>
-          <Plus data-icon="inline-start" />
-          New prompt
-        </Button>
-      </div>
+      <OptionSelect id={id} label="Prompt" value={value} onChange={onChange} options={promptOptions(options)} />
       <PromptSource
         name={value}
         onDeleted={() => {
           onChange(options.prompts[0]?.name ?? "build-product");
           onPromptsChanged();
         }}
+        actions={
+          <button type="button" className="plain-button inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground" onClick={() => setCreating(true)}>
+            <Plus className="size-3" />
+            New prompt
+          </button>
+        }
       />
       <NewPromptSheet
         open={creating}

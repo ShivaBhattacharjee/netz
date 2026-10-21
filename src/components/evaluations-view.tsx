@@ -16,9 +16,10 @@ import {
   OptionSelect,
   PromptPicker,
   RunStatus,
-  SAMPLE_SIZES,
+  SampleSizeSelect,
   accuracy,
   fieldLabel,
+  isValidSampleSize,
   modelOptions,
   overallAccuracy,
   pct,
@@ -70,13 +71,19 @@ function NewRun({
           <OptionSelect id="eval-set" label="Labelled set" value={set} onChange={setSet} options={setOptions(options)} />
           <OptionSelect id="eval-model" label="Model" value={model} onChange={setModel} options={modelOptions(options)} />
           <PromptPicker id="eval-prompt" options={options} value={prompt} onChange={setPrompt} onPromptsChanged={onPromptsChanged} />
-          <OptionSelect id="eval-limit" label="Products to build" value={limit} onChange={setLimit} options={SAMPLE_SIZES} />
+          <SampleSizeSelect
+            id="eval-limit"
+            label="Products to build"
+            value={limit}
+            onChange={setLimit}
+            available={options.sets.find((s) => s.name === set)?.products}
+          />
         </div>
         <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!set || !model || busy} onClick={() => void start()}>
+          <Button disabled={!set || !model || !isValidSampleSize(limit) || busy} onClick={() => void start()}>
             {busy ? "Starting" : "Start evaluation"}
           </Button>
         </SheetFooter>
