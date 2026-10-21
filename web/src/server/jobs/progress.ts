@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { importJob, type RowCounts, sourceRow } from "@/db/schema";
 import { log } from "../log";
 import { redis } from "../redis";
+import { emitWebhook } from "../webhooks";
 
 export const EVENTS_CHANNEL = "catalog:events";
 
@@ -38,6 +39,16 @@ export async function refreshCounts(importId: string) {
   }
 
   await publish({ type: completed ? "import.completed" : "import.progress", importId, storeId: current.storeId, counts });
+  if (completed) {
+    const [done] = await db.select({ costMicros: importJob.costMicros, fileName: importJob.fileName, finishedAt: importJob.finishedAt }).from(importJob).where(eq(importJob.id, importId));
+    await emitWebhook(current.storeId, "import.completed", {
+      import_id: importId,
+      file_name: done?.fileName,
+      counts: { ...counts, total: current.totalRows },
+      cost_usd: (done?.costMicros ?? 0) / 1_000_000,
+      finished_at: done?.finishedAt?.toISOString(),
+    });
+  }
   return counts;
 }
 
@@ -48,5 +59,8 @@ export async function failImport(importId: string, error: string) {
     .where(eq(importJob.id, importId))
     .returning({ storeId: importJob.storeId });
   log.warn("import failed", { importId, error });
-  if (row) await publish({ type: "import.failed", importId, storeId: row.storeId, error });
+  if (row) {
+    await publish({ type: "import.failed", importId, storeId: row.storeId, error });
+    await emitWebhook(row.storeId, "import.failed", { import_id: importId, error });
+  }
 }

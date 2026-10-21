@@ -132,3 +132,24 @@ export interface Metrics {
   funnel: { label: string; value: number }[];
   daily: { day: string; done: number; review: number; failed: number; cost_micros: number; saved_micros: number }[];
 }
+
+export interface WebhookEndpoint {
+  id: string;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  secret_hint: string;
+  created_at: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_id: string;
+  event: string;
+  status: number | null;
+  ok: boolean;
+  attempt: number;
+  duration_ms: number;
+  error: string | null;
+  at: string;
+}

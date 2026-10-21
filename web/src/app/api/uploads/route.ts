@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     await db.insert(upload).values({
       id: saved.id,
       storeId: ctx.store.id,
-      userId: ctx.user.id,
+      userId: ctx.userId,
       kind,
       fileName,
       bytes: saved.bytes,

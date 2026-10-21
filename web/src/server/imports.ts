@@ -36,7 +36,7 @@ function toImportJob(row: typeof importJob.$inferSelect): ImportJob {
   };
 }
 
-export async function createImport(storeId: string, userId: string, input: z.infer<typeof createImportSchema>) {
+export async function createImport(storeId: string, userId: string | null, input: z.infer<typeof createImportSchema>) {
   const ids = [input.sheet_upload_id, ...input.photo_upload_ids];
   const uploads = await db.select().from(upload).where(and(eq(upload.storeId, storeId), inArray(upload.id, ids)));
   const byId = new Map(uploads.map((u) => [u.id, u]));

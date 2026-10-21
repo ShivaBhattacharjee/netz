@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
 import { store, storeMember } from "@/db/schema";
+import { storeForKey } from "@/server/api-keys";
 import { auth } from ".";
 
 export const ACTIVE_STORE_COOKIE = "active_store";
@@ -38,12 +39,23 @@ export async function requireStore() {
   return { user, stores, active };
 }
 
-export async function getApiContext() {
+export interface ApiContext {
+  userId: string | null;
+  store: { id: string; name: string; slug: string; domain: string | null };
+  via: "session" | "api_key";
+}
+
+export async function getApiContext(): Promise<ApiContext | null> {
+  const authorization = (await headers()).get("authorization");
+  if (authorization?.startsWith("Bearer ")) {
+    const found = await storeForKey(authorization.slice(7).trim());
+    return found ? { ...found, via: "api_key" } : null;
+  }
   const session = await getSession();
   if (!session) return null;
   const stores = await getStores(session.user.id);
   if (stores.length === 0) return null;
   const wanted = (await cookies()).get(ACTIVE_STORE_COOKIE)?.value;
   const active = stores.find((s) => s.id === wanted) ?? stores[0];
-  return { user: session.user, store: active };
+  return { userId: session.user.id, store: active, via: "session" };
 }

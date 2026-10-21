@@ -7,6 +7,7 @@ import { runParse } from "@/server/jobs/parse";
 import { reconcile } from "@/server/jobs/reconcile";
 import { runTranslate } from "@/server/jobs/translate";
 import { log } from "@/server/log";
+import { deliver } from "@/server/webhooks";
 import { BACKOFF_STRATEGY, QUEUE, type QueueName, jitteredBackoff } from "@/server/queues";
 import { createRedis, redis } from "@/server/redis";
 
@@ -17,6 +18,7 @@ const CONCURRENCY: Record<QueueName, number> = {
   [QUEUE.aiCheap]: Number(process.env.AI_CHEAP_CONCURRENCY ?? 16),
   [QUEUE.aiStrong]: Number(process.env.AI_STRONG_CONCURRENCY ?? 6),
   [QUEUE.translate]: Number(process.env.TRANSLATE_CONCURRENCY ?? 8),
+  [QUEUE.webhooks]: Number(process.env.WEBHOOK_CONCURRENCY ?? 4),
 };
 
 const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>> = {
@@ -24,6 +26,7 @@ const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>
   [QUEUE.aiCheap]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
   [QUEUE.aiStrong]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
   [QUEUE.translate]: runTranslate,
+  [QUEUE.webhooks]: (job) => deliver(job.data, job.attemptsMade + 1),
 };
 
 const selected = (process.env.WORKER_QUEUES?.split(",").map((q) => q.trim()).filter(Boolean) ?? Object.values(QUEUE)) as QueueName[];

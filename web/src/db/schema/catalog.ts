@@ -264,3 +264,52 @@ export const aiCall = pgTable(
   },
   (t) => [index("ai_call_import_idx").on(t.importId), index("ai_call_store_created_idx").on(t.storeId, t.createdAt)],
 );
+
+export const webhook = pgTable(
+  "webhook",
+  {
+    id: text("id").primaryKey(),
+    storeId: storeRef(),
+    url: text("url").notNull(),
+    events: text("events").array().notNull(),
+    secret: text("secret").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index("webhook_store_idx").on(t.storeId)],
+);
+
+export const webhookDelivery = pgTable(
+  "webhook_delivery",
+  {
+    id: text("id").primaryKey(),
+    webhookId: text("webhook_id")
+      .notNull()
+      .references(() => webhook.id, { onDelete: "cascade" }),
+    storeId: storeRef(),
+    event: text("event").notNull(),
+    status: integer("status"),
+    ok: boolean("ok").notNull(),
+    attempt: integer("attempt").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    error: text("error"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("webhook_delivery_store_created_idx").on(t.storeId, t.createdAt)],
+);
+
+export const apiKey = pgTable(
+  "api_key",
+  {
+    id: text("id").primaryKey(),
+    storeId: storeRef(),
+    name: text("name").notNull(),
+    prefix: text("prefix").notNull(),
+    hash: text("hash").notNull(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    lastUsedAt: timestamp("last_used_at"),
+    revokedAt: timestamp("revoked_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("api_key_hash_uq").on(t.hash), index("api_key_store_idx").on(t.storeId)],
+);

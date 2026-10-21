@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getApiContext } from "@/lib/auth/session";
+import { type ApiContext, getApiContext } from "@/lib/auth/session";
+import { ApiKeyInputError } from "./api-keys";
 import { ImportInputError } from "./imports";
 import { ProductInputError } from "./products";
+import { WebhookInputError } from "./webhooks";
 
-type Ctx = NonNullable<Awaited<ReturnType<typeof getApiContext>>>;
-
-export function withStore<P>(handler: (ctx: Ctx, request: Request, params: P) => Promise<Response>) {
+export function withStore<P>(handler: (ctx: ApiContext, request: Request, params: P) => Promise<Response>, opts: { sessionOnly?: boolean } = {}) {
   return async (request: Request, { params }: { params: Promise<P> }) => {
     const ctx = await getApiContext();
-    if (!ctx) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    if (!ctx) return NextResponse.json({ error: "Not signed in or invalid API key" }, { status: 401 });
+    if (opts.sessionOnly && ctx.via !== "session") return NextResponse.json({ error: "This endpoint needs a signed-in user" }, { status: 403 });
     try {
       return await handler(ctx, request, await params);
     } catch (error) {
-      if (error instanceof ImportInputError || error instanceof ProductInputError) {
+      if (error instanceof ImportInputError || error instanceof ProductInputError || error instanceof WebhookInputError || error instanceof ApiKeyInputError) {
         return NextResponse.json({ error: error.message }, { status: error.message.endsWith("not found") ? 404 : 400 });
       }
       if (error instanceof z.ZodError) {

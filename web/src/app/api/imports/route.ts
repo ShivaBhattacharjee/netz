@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const created = await createImport(ctx.store.id, ctx.user.id, parsed.data);
+    const created = await createImport(ctx.store.id, ctx.userId, parsed.data);
     return NextResponse.json({ import: created }, { status: 202 });
   } catch (error) {
     if (error instanceof ImportInputError) return NextResponse.json({ error: error.message }, { status: 400 });

@@ -29,6 +29,20 @@
       "when": 1792545332703,
       "tag": "0003_unusual_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792546007382,
+      "tag": "0004_swift_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792546324886,
+      "tag": "0005_fancy_red_hulk",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,7 @@ import type {
 import { sha256 } from "./ids";
 import { enqueueTranslate } from "./queues";
 import { englishSourceHash } from "./jobs/translate";
+import { emitWebhook } from "./webhooks";
 
 type ProductRow = typeof product.$inferSelect;
 
@@ -168,7 +169,8 @@ export async function approveProducts(storeId: string, ids: string[]) {
     .update(product)
     .set({ status: "approved", reviewReason: null })
     .where(and(live(storeId), inArray(product.id, ids), ne(product.status, "failed")))
-    .returning({ id: product.id });
+    .returning({ id: product.id, handle: product.handle, title: product.title });
+  if (updated.length) await emitWebhook(storeId, "product.approved", { products: updated.map((p) => ({ id: p.id, handle: p.handle, title: p.title })) });
   return updated.length;
 }
 
