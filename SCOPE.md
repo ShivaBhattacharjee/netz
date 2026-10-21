@@ -34,23 +34,28 @@ Supplier sheet + photos in, clean three-language catalog out, with a review step
 
 ```
 Browser (Next.js app)
-  │  upload (presigned) ──► object storage
-  │  REST + SSE
+  │  POST /api/uploads (streamed, sniffed, size-capped) ──► local storage (STORAGE_DIR)
+  │  POST /api/imports, GET /api/imports[/id]
   ▼
-Next.js API routes ──► Postgres (Supabase)
+Next.js API routes ──► Postgres (Drizzle)
   │ enqueue                ▲
-  ▼                        │ upserts keyed by (store, sku)
-Redis + BullMQ ──► Worker process(es)
-                     parse → clean → group → route → AI (batch) → validate → translate
+  ▼                        │ upserts keyed by (store, group) and (store, sku)
+Redis + BullMQ ──► Worker process (`pnpm worker`, src/worker)
+  queues: parse → ai.cheap / ai.strong → translate
+  parse: decode → header detect → clean → group → photos → route
+  ai.*:  Gemini build (prompts/build-product.md) → validate → claim check → persist
+  translate: Gemini EN → DE, FR per field (prompts/translate.md)
 Storefront routes ──► Postgres read model (published + translated only), cached
 ```
 
-- Worker runs as a separate process so import load never shares the storefront's event loop.
-- Every stage writes its result before the next stage runs; jobs are keyed by `(import_id, group_key, stage)` so a retry or restart never repeats paid work.
+- Models (env): `GEMINI_MODEL_FAST` gemini-3.1-flash-lite for clean groups, `GEMINI_MODEL_STRONG` gemini-3.8-flash for messy groups and photos, `GEMINI_MODEL_TRANSLATE` gemini-3.5-flash-lite. `AI_MODE=mock` runs the whole pipeline without a key.
+- Worker runs as a separate process so import load never shares the storefront's event loop. `WORKER_QUEUES` and `*_CONCURRENCY` split queues across processes.
+- Every stage writes its result before the next stage runs; jobs are keyed by `(import_id, group_id, stage)` and successful model output is cached in `ai_result` before the product write, so a retry or restart never repeats paid work.
+- A reconciler (on start and every 5 minutes) re-enqueues anything Postgres says is unfinished; Postgres is the source of truth, Redis is the delivery mechanism.
 
 ## Data model (first cut)
 
-`stores`, `imports`, `import_files`, `source_rows` (raw + normalised + row hash + status), `products`, `variants`, `product_fields` (value, confidence, source, `is_manual`), `claims` (text, source row/column), `translations` (locale, field, text, source hash, `is_manual`, state), `photos` (content hash, match), `ai_calls` (model, tokens, cost, latency, import, product).
+Built (`web/src/db/schema`): `store`, `store_member`, `upload`, `import`, `import_group` (cleaned input, input hash, route, status), `source_row` (raw + normalised + row hash + status), `photo` (content hash, match), `product` (fields, claims, confidence, `manual_fields`, input hash, tombstone), `variant`, `product_photo`, `translation` (locale, field, text, source hash, origin, state), `ai_result` (output cache), `ai_call` (model, prompt version, tokens, cost, latency).
 
 ## Build order
 
