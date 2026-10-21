@@ -1,8 +1,10 @@
 "use client";
 
 import { Boxes } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { signIn } from "@/lib/auth/client";
 
 function GoogleIcon() {
   return (
@@ -21,9 +23,27 @@ function GoogleIcon() {
   );
 }
 
-export function LoginForm() {
-  const router = useRouter();
+const ERROR_MESSAGES: Record<string, string> = {
+  access_denied: "Google sign-in was cancelled.",
+  account_not_linked: "This email is already registered with a different sign-in method.",
+};
+
+export function LoginForm({ error }: { error?: string }) {
   const [loading, setLoading] = useState(false);
+
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    const { error } = await signIn.social({
+      provider: "google",
+      callbackURL: "/imports",
+      newUserCallbackURL: "/onboarding",
+      errorCallbackURL: "/login",
+    });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message ?? "Could not start Google sign-in.");
+    }
+  };
 
   return (
     <section className="flex w-full flex-col px-6 py-6 md:w-[32%] md:max-w-[560px] md:min-w-[380px] md:px-10">
@@ -43,18 +63,22 @@ export function LoginForm() {
             type="button"
             aria-label="Sign in with Google"
             disabled={loading}
-            onClick={() => {
-              setLoading(true);
-              router.push("/imports");
-            }}
+            onClick={signInWithGoogle}
             className="flex h-14 items-center justify-center border-t border-foreground/80 bg-muted/50 transition-colors outline-none hover:bg-muted focus-visible:bg-muted disabled:opacity-60"
           >
             <GoogleIcon />
           </button>
         </div>
+
+        {error ? (
+          <p role="alert" className="mt-4 text-sm text-destructive">
+            {ERROR_MESSAGES[error] ?? "Sign-in failed. Please try again."}
+          </p>
+        ) : null}
       </div>
 
       <div className="border-t border-border" />
+      <Toaster position="bottom-right" />
     </section>
   );
 }

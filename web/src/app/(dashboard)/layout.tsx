@@ -4,12 +4,18 @@ import { AppTopbar } from "@/components/app-topbar";
 import { ImportTicker } from "@/components/import-ticker";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { requireStore } from "@/lib/auth/session";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { user, stores, active } = await requireStore();
   const defaultOpen = (await cookies()).get("sidebar_state")?.value !== "false";
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar />
+      <AppSidebar
+        stores={stores}
+        activeStoreId={active.id}
+        user={{ name: user.name, email: user.email, image: user.image }}
+      />
       <ImportTicker />
       <SidebarInset className="min-w-0 md:peer-data-[variant=inset]:border">
         <AppTopbar />

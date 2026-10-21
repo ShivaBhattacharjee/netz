@@ -17,8 +17,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { usePathname, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -40,8 +42,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { currentUser, stores } from "@/lib/data/platform";
-import { actions, useImports, useProducts, useStoreId } from "@/lib/data/store";
+import { signOut } from "@/lib/auth/client";
+import { useImports, useProducts } from "@/lib/data/store";
+import { switchStore } from "@/lib/stores/actions";
 import { cn } from "@/lib/utils";
 
 interface Leaf {
@@ -111,21 +114,59 @@ function NavTree({ label, icon: Icon, active, items, pathname }: { label: string
   );
 }
 
-function StoreSwitcher() {
-  const storeId = useStoreId();
-  const store = stores.find((s) => s.id === storeId) ?? stores[0];
+export interface SidebarStore {
+  id: string;
+  name: string;
+  domain: string | null;
+  slug: string;
+}
+
+export interface SidebarUser {
+  name: string;
+  email: string;
+  image?: string | null;
+}
+
+function initials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]!.toUpperCase())
+      .join("") || "?"
+  );
+}
+
+function StoreSwitcher({ stores, activeStoreId }: { stores: SidebarStore[]; activeStoreId: string }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const store = stores.find((s) => s.id === activeStoreId) ?? stores[0];
+
+  const select = (id: string) => {
+    if (id === activeStoreId) return;
+    startTransition(async () => {
+      const result = await switchStore(id);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
+            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent" disabled={pending}>
               <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Boxes className="size-4" />
               </span>
               <span className="grid flex-1 text-left leading-tight">
                 <span className="truncate text-sm font-semibold">{store.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{store.domain}</span>
+                <span className="truncate text-xs text-muted-foreground">{store.domain ?? store.slug}</span>
               </span>
               <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
             </SidebarMenuButton>
@@ -133,16 +174,18 @@ function StoreSwitcher() {
           <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width) min-w-56">
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Stores</DropdownMenuLabel>
             {stores.map((s) => (
-              <DropdownMenuItem key={s.id} onSelect={() => actions.setStore(s.id)}>
+              <DropdownMenuItem key={s.id} onSelect={() => select(s.id)}>
                 <StoreIcon />
-                <span className="flex-1">{s.name}</span>
-                {s.id === storeId ? <Check /> : null}
+                <span className="flex-1 truncate">{s.name}</span>
+                {s.id === store.id ? <Check /> : null}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <Plus />
-              Add store
+            <DropdownMenuItem asChild>
+              <Link href="/onboarding">
+                <Plus />
+                Add store
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -151,7 +194,22 @@ function StoreSwitcher() {
   );
 }
 
-function UserMenu() {
+function UserMenu({ user }: { user: SidebarUser }) {
+  const router = useRouter();
+
+  const logout = () =>
+    signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.replace("/login");
+          router.refresh();
+        },
+        onError: () => {
+          toast.error("Could not sign out, please try again.");
+        },
+      },
+    });
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -159,11 +217,12 @@ function UserMenu() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
               <Avatar className="size-8 rounded-lg">
-                <AvatarFallback className="rounded-lg text-xs">{currentUser.initials}</AvatarFallback>
+                {user.image ? <AvatarImage src={user.image} alt="" /> : null}
+                <AvatarFallback className="rounded-lg text-xs">{initials(user.name)}</AvatarFallback>
               </Avatar>
               <span className="grid flex-1 text-left leading-tight">
-                <span className="truncate text-sm font-medium">{currentUser.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{currentUser.email}</span>
+                <span className="truncate text-sm font-medium">{user.name}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </span>
               <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
             </SidebarMenuButton>
@@ -176,11 +235,9 @@ function UserMenu() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/login">
-                <LogOut />
-                Sign out
-              </Link>
+            <DropdownMenuItem onSelect={logout}>
+              <LogOut />
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -189,7 +246,15 @@ function UserMenu() {
   );
 }
 
-export function AppSidebar() {
+export function AppSidebar({
+  stores,
+  activeStoreId,
+  user,
+}: {
+  stores: SidebarStore[];
+  activeStoreId: string;
+  user: SidebarUser;
+}) {
   const pathname = usePathname();
   const imports = useImports();
   const review = useProducts().filter((p) => p.status === "needs_review").length;
@@ -213,7 +278,7 @@ export function AppSidebar() {
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
-        <StoreSwitcher />
+        <StoreSwitcher stores={stores} activeStoreId={activeStoreId} />
       </SidebarHeader>
 
       <SidebarContent>
@@ -244,7 +309,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <UserMenu />
+        <UserMenu user={user} />
       </SidebarFooter>
     </Sidebar>
   );
