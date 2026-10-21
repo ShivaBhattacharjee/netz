@@ -1,5 +1,5 @@
-evals/
-scripts/
+/evals/
+/scripts/
 .DS_Store
 
 design.md
