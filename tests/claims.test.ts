@@ -9,7 +9,12 @@ const output: BuildOutput = {
   description_html: "<p>Frost-proof organic planter.</p><script>x()</script>",
   category: "Garden > Things",
   tags: ["planter"],
-  attributes: [{ key: "care", value: "Bring indoors below 0 °C", source: "row 4, column Notes" }],
+  attributes: [
+    { key: "care", value: "Bring indoors below 0 °C", source_row: 4, source_column: "Notes", quote: "bring indoors below 0 °C" },
+    { key: "finish", value: "hand-thrown", source_row: 4, source_column: "bezeichnung", quote: "handgedreht" },
+    { key: "origin", value: "Made in Italy", source_row: 4, source_column: "Notes", quote: "Made in Italy" },
+    { key: "drainage", value: "no drainage hole", source_row: 7, source_column: "Beschreibung", quote: "Abzugsloch" },
+  ],
   claims: [
     { text: "frost-resistant", source_row: 4, source_column: "Notes", quote: "frost-resistant" },
     { text: "frost-proof", source_row: 4, source_column: "Notes", quote: "frost-proof" },
@@ -38,6 +43,17 @@ describe("checking model output", () => {
   it("removes claims with a missing quote or a row from another product (2.2)", () => {
     expect(built.reviewReasons).toContain('Removed unsupported claim "dishwasher-safe": quote not found in row 4, column Notes');
     expect(built.reviewReasons).toContain('Removed unsupported claim "handmade": cites row 99, column Notes, which is not in this product');
+  });
+
+  it("keeps attributes quoted from the cited cell, in the supplier's language (2.2)", () => {
+    expect(built.attributes).toMatchObject({ care: "Bring indoors below 0 °C", finish: "hand-thrown" });
+  });
+
+  it("removes attributes with no quote in the cited cell (2.2)", () => {
+    expect(built.attributes).not.toHaveProperty("origin");
+    expect(built.attributes).not.toHaveProperty("drainage");
+    expect(built.reviewReasons).toContain('Removed unsupported attribute origin "Made in Italy": quote not found in row 4, column Notes');
+    expect(built.reviewReasons).toContain('Removed unsupported attribute drainage "no drainage hole": cites row 7, column Beschreibung, which is not in this product');
   });
 
   it("flags risky terms with no source (2.2)", () => {

@@ -7,7 +7,7 @@ import { TAXONOMY, isCategory } from "../pipeline/taxonomy";
 import { storage } from "../storage";
 import { AiError, type Usage, generateJson, toResponseSchema, usageOf } from "./anthropic";
 import { type Prompt, loadPrompt, render } from "./prompts";
-import { unsupportedTerms, verifyClaims } from "./verify";
+import { unsupportedTerms, verifyAttributes, verifyClaims } from "./verify";
 
 export const LOW_CONFIDENCE = 70;
 const REQUIRED_FIELDS = ["title", "description_html", "category"] as const;
@@ -20,7 +20,17 @@ export const buildOutputSchema = z.object({
   description_html: z.string().max(6000),
   category: z.string().min(1).describe("One value from the taxonomy list"),
   tags: z.array(z.string().min(1).max(40)).max(12),
-  attributes: z.array(z.object({ key: z.string().min(1).max(40), value: z.string().min(1).max(200), source: z.string().max(80) })).max(20),
+  attributes: z
+    .array(
+      z.object({
+        key: z.string().min(1).max(40),
+        value: z.string().min(1).max(200),
+        source_row: z.number().int(),
+        source_column: z.string().min(1),
+        quote: z.string().min(1).max(300),
+      }),
+    )
+    .max(20),
   claims: z
     .array(z.object({ text: z.string().min(1).max(80), source_row: z.number().int(), source_column: z.string().min(1), quote: z.string().min(1).max(300) }))
     .max(20),
@@ -158,14 +168,19 @@ export function finalizeBuild(group: GroupInput, output: BuildOutput): BuiltProd
   for (const r of verified.rejected) reasons.push(`Removed unsupported claim "${r.text}": ${r.reason}`);
 
   const descriptionHtml = sanitizeHtml(output.description_html);
-  const attributes: Record<string, string> = { ...group.attributes };
-  for (const a of output.attributes) {
-    const key = a.key.trim().toLowerCase().replace(/\s+/g, "_");
-    if (!(key in group.attributes)) attributes[key] = a.value.trim();
-  }
-
   const confidence: Record<string, number> = {};
   for (const c of output.confidence) confidence[c.field] = Math.round(c.score);
+
+  const attributes: Record<string, string> = { ...group.attributes };
+  const modelAttributes = output.attributes
+    .map((a) => ({ ...a, key: a.key.trim().toLowerCase().replace(/\s+/g, "_"), value: a.value.trim() }))
+    .filter((a) => !(a.key in group.attributes));
+  const checked = verifyAttributes(group, modelAttributes);
+  for (const a of checked.kept) attributes[a.key] = a.value;
+  for (const { attribute, reason } of checked.rejected) {
+    if (!(attribute.key in attributes)) delete confidence[`attributes.${attribute.key}`];
+    reasons.push(`Removed unsupported attribute ${attribute.key} "${attribute.value}": ${reason}`);
+  }
   for (const key of Object.keys(group.attributes)) confidence[`attributes.${key}`] ??= 95;
 
   let category = output.category.trim();

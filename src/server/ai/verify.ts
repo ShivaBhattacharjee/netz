@@ -32,27 +32,49 @@ function contradicted(claim: string, cell: string) {
   return new RegExp(`\\b(not|no|never|nicht|kein|keine|pas|sans|without|ohne)\\s+${escapeRe(phrase)}\\b`).test(normalizeForMatch(cell));
 }
 
+type Quoted = { source_row: number; source_column: string; quote: string };
+
+function findQuote(group: GroupInput, q: Quoted): { error: string } | { column: string; text: string; source: string } {
+  const cell = cellText(group, q.source_row, q.source_column);
+  if (!cell) return { error: `cites row ${q.source_row}, column ${q.source_column}, which is not in this product` };
+  const quote = normalizeForMatch(q.quote);
+  if (!quote || !normalizeForMatch(cell.text).includes(quote)) return { error: `quote not found in row ${q.source_row}, column ${cell.column}` };
+  return { ...cell, source: `row ${q.source_row}, column ${cell.column}` };
+}
+
 export function verifyClaims(group: GroupInput, claims: RawClaim[]): VerifiedClaims {
   const kept: VerifiedClaims["kept"] = [];
   const rejected: VerifiedClaims["rejected"] = [];
   for (const c of claims) {
-    const cell = cellText(group, c.source_row, c.source_column);
-    if (!cell) {
-      rejected.push({ text: c.text, reason: `cites row ${c.source_row}, column ${c.source_column}, which is not in this product` });
+    const found = findQuote(group, c);
+    if ("error" in found) {
+      rejected.push({ text: c.text, reason: found.error });
       continue;
     }
-    const quote = normalizeForMatch(c.quote);
-    if (!quote || !normalizeForMatch(cell.text).includes(quote)) {
-      rejected.push({ text: c.text, reason: `quote not found in row ${c.source_row}, column ${cell.column}` });
-      continue;
-    }
-    if (contradicted(c.text, cell.text)) {
-      rejected.push({ text: c.text, reason: `the source says the opposite (row ${c.source_row}, column ${cell.column})` });
+    if (contradicted(c.text, found.text)) {
+      rejected.push({ text: c.text, reason: `the source says the opposite (${found.source})` });
       continue;
     }
     if (!kept.some((k) => normalizeForMatch(k.text) === normalizeForMatch(c.text))) {
-      kept.push({ text: c.text, source: `row ${c.source_row}, column ${cell.column}` });
+      kept.push({ text: c.text, source: found.source });
     }
+  }
+  return { kept, rejected };
+}
+
+export interface RawAttribute extends Quoted {
+  key: string;
+  value: string;
+}
+
+export function verifyAttributes(group: GroupInput, attributes: RawAttribute[]) {
+  const kept: RawAttribute[] = [];
+  const rejected: { attribute: RawAttribute; reason: string }[] = [];
+  for (const a of attributes) {
+    const found = findQuote(group, a);
+    if ("error" in found) rejected.push({ attribute: a, reason: found.error });
+    else if (contradicted(a.value, found.text)) rejected.push({ attribute: a, reason: `the source says the opposite (${found.source})` });
+    else kept.push(a);
   }
   return { kept, rejected };
 }
