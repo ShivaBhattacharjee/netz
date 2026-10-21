@@ -27,7 +27,12 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
             return (
               <li key={p.id}>
                 <Link href={`/store/${p.handle}?country=${country.code}`} className="group flex flex-col gap-3">
-                  <PhotoTile src={p.photos[0]} />
+                  <div className="relative">
+                    <PhotoTile src={p.photos[0]} />
+                    {p.photos[1] ? (
+                      <PhotoTile src={p.photos[1]} className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    ) : null}
+                  </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-compact group-hover:underline">{localized(p, country.locale, "title")}</span>
                     <span className="text-compact text-muted-foreground tabular-nums">

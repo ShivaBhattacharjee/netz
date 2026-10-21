@@ -10,6 +10,7 @@ import { env } from "../env";
 import { newId, sha256 } from "../ids";
 import { log } from "../log";
 import type { GroupInput } from "../pipeline/group";
+import { comparePhotoNames } from "../pipeline/photos";
 import { slugify } from "../pipeline/text";
 import { type BuildJob, type RerunJob, enqueueTranslate } from "../queues";
 import { currentPause, pauseAi, pauseFor, recordProviderFailure, recordProviderSuccess } from "./gate";
@@ -89,7 +90,7 @@ async function persist(group: typeof importGroup.$inferSelect, input: GroupInput
       .select({ id: photo.id, fileName: photo.fileName })
       .from(photo)
       .where(and(eq(photo.importId, group.importId), eq(photo.groupKey, group.groupKey), eq(photo.status, "matched")));
-    photos.sort((a, b) => a.fileName.localeCompare(b.fileName));
+    photos.sort((a, b) => comparePhotoNames(a.fileName, b.fileName));
     if (photos.length) {
       await tx.insert(productPhoto).values(photos.map((p, position) => ({ productId, photoId: p.id, position }))).onConflictDoNothing();
     }

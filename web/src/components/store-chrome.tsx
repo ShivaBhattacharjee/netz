@@ -1,4 +1,4 @@
-import { ArrowLeft, Boxes } from "lucide-react";
+import { ArrowLeft, Boxes, ImageOff } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,13 @@ export function StoreChrome({ country, storeName, children }: { country: Country
 }
 
 export function PhotoTile({ src, className }: { src?: string; className?: string }) {
-  if (!src) return <div className={cn("aspect-[4/5] rounded-lg bg-muted", className)} />;
+  if (!src) {
+    return (
+      <div className={cn("flex aspect-[4/5] items-center justify-center rounded-lg bg-muted text-muted-foreground/60", className)}>
+        <ImageOff aria-hidden className="size-8" />
+      </div>
+    );
+  }
   // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
   return <img src={src} alt="" loading="lazy" className={cn("aspect-[4/5] w-full rounded-lg bg-muted object-cover", className)} />;
 }

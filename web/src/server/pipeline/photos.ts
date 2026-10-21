@@ -191,6 +191,12 @@ export async function processPhotos(candidates: AsyncIterable<PhotoCandidate | {
   for (const r of all) {
     if (r.status === "matched") groupsByKey.get(r.groupKey!)!.photos.push({ file_name: r.fileName, sha256: r.sha256!, storage_key: r.storageKey! });
   }
-  for (const g of groups) g.photos.sort((a, b) => a.file_name.localeCompare(b.file_name));
+  for (const g of groups) g.photos.sort((a, b) => comparePhotoNames(a.file_name, b.file_name));
   return all;
+}
+
+const PRIMARY_PHOTO = /(^|[_\-. ])(front|main|hero|primary|default)([_\-. ]|$)/i;
+
+export function comparePhotoNames(a: string, b: string) {
+  return Number(!PRIMARY_PHOTO.test(a)) - Number(!PRIMARY_PHOTO.test(b)) || a.localeCompare(b, undefined, { numeric: true });
 }
