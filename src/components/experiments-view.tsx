@@ -218,12 +218,18 @@ export function ExperimentsView() {
     return () => clearInterval(timer);
   }, [running, load]);
 
-  const createButton = (label: string) => (
-    <Button disabled={!data?.sets.length} onClick={() => setCreating(true)}>
-      <Plus data-icon="inline-start" />
-      {label}
-    </Button>
-  );
+  const createButton = (label: string) =>
+    data?.sets.length ? (
+      <Button onClick={() => setCreating(true)}>
+        <Plus data-icon="inline-start" />
+        {label}
+      </Button>
+    ) : (
+      <Button onClick={() => setUploading(true)}>
+        <Upload data-icon="inline-start" />
+        Upload labelled set
+      </Button>
+    );
 
   if (!data) {
     return (

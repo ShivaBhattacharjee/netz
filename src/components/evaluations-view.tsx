@@ -177,12 +177,18 @@ export function EvaluationsView() {
     return () => clearInterval(timer);
   }, [running, load]);
 
-  const startButton = (label: string) => (
-    <Button disabled={!data?.sets.length} onClick={() => setStarting(true)}>
-      <Play data-icon="inline-start" />
-      {label}
-    </Button>
-  );
+  const startButton = (label: string) =>
+    data?.sets.length ? (
+      <Button onClick={() => setStarting(true)}>
+        <Play data-icon="inline-start" />
+        {label}
+      </Button>
+    ) : (
+      <Button onClick={() => setUploading(true)}>
+        <Upload data-icon="inline-start" />
+        Upload labelled set
+      </Button>
+    );
 
   if (!data) {
     return (
