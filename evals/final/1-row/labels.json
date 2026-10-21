@@ -1,0 +1,71 @@
+{
+  "file": "supplier-sheet.csv",
+  "header_row": 3,
+  "total_rows": 1,
+  "expected_row_counts": {
+    "done": 1,
+    "needs_review": 0,
+    "failed": 0
+  },
+  "products": [
+    {
+      "group": "TC-PL",
+      "source_rows": [
+        4
+      ],
+      "category": "Home & Garden > Planters",
+      "attributes": {
+        "material": "terracotta",
+        "color": "terracotta"
+      },
+      "variants": [
+        {
+          "sku": "TC-PL-20",
+          "options": {
+            "size": "20 cm"
+          },
+          "price_cents": 2499,
+          "currency": "EUR",
+          "weight_grams": 1800
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "frost-resistant",
+          "source": "row 4, column Notes",
+          "must_keep_qualifier": "not frost-proof, bring indoors below 0 °C"
+        },
+        {
+          "text": "drainage hole",
+          "source": "row 4, column Beschreibung"
+        },
+        {
+          "text": "hand-thrown",
+          "source": "row 4, column Bezeichnung"
+        }
+      ],
+      "forbidden_claims": [
+        "frost-proof",
+        "weatherproof",
+        "glazed"
+      ],
+      "expected_status": "ready",
+      "photos": [
+        "TC-PL-20_front.jpg",
+        "TC-PL-20_detail.jpg",
+        "TC-PL-20_side.jpg"
+      ]
+    }
+  ],
+  "duplicate_rows": [],
+  "failed_rows": [],
+  "photos": {
+    "matched": {
+      "TC-PL-20_front.jpg": "TC-PL",
+      "TC-PL-20_detail.jpg": "TC-PL",
+      "TC-PL-20_side.jpg": "TC-PL"
+    },
+    "unmatched": [],
+    "duplicate_content": {}
+  }
+}

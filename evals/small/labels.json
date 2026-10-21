@@ -1,0 +1,455 @@
+{
+  "file": "supplier-sheet.csv",
+  "header_row": 3,
+  "total_rows": 21,
+  "products": [
+    {
+      "group": "TC-PL",
+      "source_rows": [
+        4,
+        6,
+        22
+      ],
+      "category": "Home & Garden > Planters",
+      "attributes": {
+        "material": "terracotta",
+        "color": "terracotta"
+      },
+      "variants": [
+        {
+          "sku": "TC-PL-12",
+          "options": {
+            "size": "12 cm"
+          },
+          "price_cents": 1450,
+          "currency": "EUR",
+          "weight_grams": 600
+        },
+        {
+          "sku": "TC-PL-20",
+          "options": {
+            "size": "20 cm"
+          },
+          "price_cents": 2499,
+          "currency": "EUR",
+          "weight_grams": 1800
+        },
+        {
+          "sku": "TC-PL-30",
+          "options": {
+            "size": "30 cm"
+          },
+          "price_cents": null,
+          "currency": "EUR",
+          "weight_grams": 3311
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "frost-resistant",
+          "source": "row 4, column Notes",
+          "must_keep_qualifier": "not frost-proof, bring indoors below 0 °C"
+        },
+        {
+          "text": "drainage hole",
+          "source": "row 4, column Beschreibung"
+        },
+        {
+          "text": "hand-thrown",
+          "source": "row 4, column Bezeichnung"
+        }
+      ],
+      "forbidden_claims": [
+        "frost-proof",
+        "weatherproof",
+        "glazed"
+      ],
+      "expected_status": "needs_review",
+      "expected_review_reason": "No price for size 30 cm",
+      "photos": [
+        "TC-PL-20_front.jpg",
+        "TC-PL-20_top.jpg",
+        "TC-PL-12.jpg"
+      ],
+      "notes": "Rows out of order, German name, colour typo, inches and lbs, script and onclick must be stripped."
+    },
+    {
+      "group": "MG-ST",
+      "source_rows": [
+        5,
+        7,
+        8,
+        10
+      ],
+      "duplicate_rows": [
+        {
+          "row": 9,
+          "duplicate_of": 8
+        }
+      ],
+      "category": "Kitchen & Dining > Mugs",
+      "attributes": {
+        "material": "stoneware"
+      },
+      "variants": [
+        {
+          "sku": "MG-ST-250-WH",
+          "options": {
+            "size": "250 ml",
+            "color": "white"
+          },
+          "price_cents": 1299,
+          "currency": "EUR",
+          "weight_grams": 320
+        },
+        {
+          "sku": "MG-ST-250-CH",
+          "options": {
+            "size": "250 ml",
+            "color": "charcoal"
+          },
+          "price_cents": 1299,
+          "currency": "EUR",
+          "weight_grams": 320
+        },
+        {
+          "sku": "MG-ST-350-WH",
+          "options": {
+            "size": "350 ml",
+            "color": "white"
+          },
+          "price_cents": 1499,
+          "currency": "EUR",
+          "weight_grams": 410
+        },
+        {
+          "sku": "MG-ST-350-CH",
+          "options": {
+            "size": "350 ml",
+            "color": "charcoal"
+          },
+          "price_cents": 1499,
+          "currency": "EUR",
+          "weight_grams": 410
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "dishwasher-safe",
+          "source": "row 5, column Notes"
+        }
+      ],
+      "forbidden_claims": [
+        "microwave-safe",
+        "handmade"
+      ],
+      "expected_status": "ready",
+      "photos": [
+        "MG-ST-350-WH.jpg"
+      ],
+      "notes": "Exact duplicate row, 0,35 l means 350 ml, antrazit is charcoal, no currency symbol on 12.99."
+    },
+    {
+      "group": "VS-GL",
+      "source_rows": [
+        11,
+        12,
+        13
+      ],
+      "category": "Home & Garden > Vases",
+      "attributes": {
+        "material": "glass",
+        "color": "sage"
+      },
+      "variants": [
+        {
+          "sku": "VS-GL-18",
+          "options": {
+            "size": "18 cm"
+          },
+          "price_cents": null,
+          "currency": "EUR",
+          "weight_grams": 700
+        },
+        {
+          "sku": "VS-GL-28",
+          "options": {
+            "size": "28 cm"
+          },
+          "price_cents": 3999,
+          "currency": "EUR",
+          "weight_grams": 1400
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "handmade",
+          "source": "row 11, column Notes"
+        }
+      ],
+      "forbidden_claims": [
+        "dishwasher-safe"
+      ],
+      "expected_status": "needs_review",
+      "expected_review_reason": "Two prices for SKU VS-GL-18 (rows 11 and 13)",
+      "photos": [
+        "VS-GL-18.jpg"
+      ],
+      "notes": "Same SKU with conflicting prices must not be merged silently."
+    },
+    {
+      "group": "CU-LN",
+      "source_rows": [
+        14,
+        15
+      ],
+      "category": "Home > Textiles > Cushions",
+      "attributes": {
+        "material": "linen",
+        "color": "natural"
+      },
+      "variants": [
+        {
+          "sku": "CU-LN-40",
+          "options": {
+            "size": "40 × 40 cm"
+          },
+          "price_cents": 2400,
+          "currency": "GBP",
+          "weight_grams": 180
+        },
+        {
+          "sku": "CU-LN-50",
+          "options": {
+            "size": "50 × 50 cm"
+          },
+          "price_cents": 3400,
+          "currency": "EUR",
+          "weight_grams": 240
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "washable at 40 °C",
+          "source": "row 14, column Notes"
+        }
+      ],
+      "forbidden_claims": [
+        "OEKO-TEX certified",
+        "organic"
+      ],
+      "expected_status": "needs_review",
+      "expected_review_reason": "Mixed currencies within one product (GBP and EUR)",
+      "photos": [
+        "CU-LN-40.jpg"
+      ],
+      "notes": "Colour typo natrual, size in inches, pounds sterling on one variant only."
+    },
+    {
+      "group": "CN-SY",
+      "source_rows": [
+        16,
+        17
+      ],
+      "category": "Home > Fragrance > Candles",
+      "attributes": {
+        "material": "soy wax",
+        "color": "white",
+        "scent": "fig"
+      },
+      "variants": [
+        {
+          "sku": "CN-SY-180",
+          "options": {
+            "size": "180 g"
+          },
+          "price_cents": 1990,
+          "currency": "EUR",
+          "weight_grams": 260
+        },
+        {
+          "sku": "CN-SY-320",
+          "options": {
+            "size": "320 g"
+          },
+          "price_cents": 2990,
+          "currency": "EUR",
+          "weight_grams": 450
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "vegan",
+          "source": "row 16, column Notes"
+        },
+        {
+          "text": "hand-poured",
+          "source": "row 16, column Beschreibung"
+        },
+        {
+          "text": "40 hour burn time",
+          "source": "row 16, column Beschreibung"
+        }
+      ],
+      "forbidden_claims": [
+        "organic",
+        "non-toxic",
+        "paraffin-free"
+      ],
+      "expected_status": "ready",
+      "photos": [
+        "CN-SY-180.jpg"
+      ],
+      "notes": "19.9 means 19.90, 11.3 oz is about 320 g. Classic trap for an invented organic claim."
+    },
+    {
+      "group": "BK-SG",
+      "source_rows": [
+        18,
+        19,
+        20
+      ],
+      "category": "Home > Storage > Baskets",
+      "attributes": {
+        "material": "seagrass",
+        "color": "natural"
+      },
+      "variants": [
+        {
+          "sku": "BK-SG-S",
+          "options": {
+            "size": "S"
+          },
+          "price_cents": 2299,
+          "currency": "EUR",
+          "weight_grams": 408
+        },
+        {
+          "sku": "BK-SG-M",
+          "options": {
+            "size": "M"
+          },
+          "price_cents": 2799,
+          "currency": "EUR",
+          "weight_grams": 650
+        },
+        {
+          "sku": "BK-SG-L",
+          "options": {
+            "size": "L"
+          },
+          "price_cents": 3299,
+          "currency": "EUR",
+          "weight_grams": 900
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "handwoven",
+          "source": "row 18, column Notes"
+        }
+      ],
+      "forbidden_claims": [
+        "fair trade",
+        "waterproof"
+      ],
+      "expected_status": "ready",
+      "photos": [],
+      "notes": "German description must become English output, small/M/Large normalised to S/M/L."
+    },
+    {
+      "group": "TH-WL",
+      "source_rows": [
+        21
+      ],
+      "category": "Home > Textiles > Throws",
+      "attributes": {
+        "material": "wool",
+        "color": "green"
+      },
+      "variants": [
+        {
+          "sku": "TH-WL-01",
+          "options": {
+            "size": "130 × 170 cm"
+          },
+          "price_cents": 7900,
+          "currency": "EUR",
+          "weight_grams": 1100
+        }
+      ],
+      "allowed_claims": [],
+      "forbidden_claims": [
+        "merino certified",
+        "machine washable"
+      ],
+      "expected_status": "ready",
+      "photos": [],
+      "notes": "Mojibake GrÃ¼n is Grün (green). Notes holds a formula that must be escaped on export."
+    },
+    {
+      "group": "LP-CE",
+      "source_rows": [
+        24
+      ],
+      "category": "Lighting > Table Lamps",
+      "attributes": {
+        "material": "ceramic",
+        "color": "ochre"
+      },
+      "variants": [
+        {
+          "sku": "LP-CE-32",
+          "options": {
+            "size": "32 cm"
+          },
+          "price_cents": 129900,
+          "currency": "EUR",
+          "weight_grams": 2100
+        }
+      ],
+      "allowed_claims": [
+        {
+          "text": "E27 fitting",
+          "source": "row 24, column Notes"
+        }
+      ],
+      "forbidden_claims": [
+        "bulb included",
+        "dimmable"
+      ],
+      "expected_status": "ready",
+      "photos": [],
+      "notes": "1.299,00 € is 129900 cents, not 1299 or 129.9."
+    }
+  ],
+  "failed_rows": [
+    {
+      "row": 23,
+      "reason": "Not enough information to build a product (no title, no description)"
+    }
+  ],
+  "photos": {
+    "matched": {
+      "TC-PL-20_front.jpg": "TC-PL",
+      "TC-PL-20_top.jpg": "TC-PL",
+      "TC-PL-12.jpg": "TC-PL",
+      "MG-ST-350-WH.jpg": "MG-ST",
+      "VS-GL-18.jpg": "VS-GL",
+      "CU-LN-40.jpg": "CU-LN",
+      "CN-SY-180.jpg": "CN-SY"
+    },
+    "unmatched": [
+      "IMG_0001.jpg",
+      "DSC_4410.jpg",
+      "mug.jpg"
+    ],
+    "duplicate_content": {
+      "TC-PL-20_copy.jpg": "TC-PL-20_front.jpg"
+    },
+    "invalid": {
+      "broken.jpg": "not a valid image",
+      "notes.txt": "unsupported type"
+    }
+  }
+}

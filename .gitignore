@@ -43,9 +43,13 @@ next-env.d.ts
 
 /.data/
 
+# loose photo folders of the big eval sets; each set keeps its photos.zip
+/evals/medium/photos/
+/evals/large/photos/
+/evals/final/1000-rows/photos/
+/evals/final/10000-rows/photos/
+
 # local-only
-/evals/
-/scripts/
 /design.md
 /project.md
 /.agents/

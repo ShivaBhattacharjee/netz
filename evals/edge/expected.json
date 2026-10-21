@@ -1,0 +1,18 @@
+{
+  "empty.csv": "Rejected before upload: the file is empty",
+  "header-only.csv": "Import fails: no data rows under the header",
+  "truncated-quotes.csv": "Import fails with the parser error and line number, no partial import",
+  "semicolon-cp1252.csv": "Parses: semicolon delimiter detected, Windows-1252 decoded (°C in the Notes column intact)",
+  "too-many-rows.csv": "Rejected: 10,050 rows, the limit is 10,000. Nothing processed, no AI spend",
+  "exactly-10000-rows.csv": "Accepted: exactly at the limit",
+  "huge-description.csv": "Parses: description truncated to the token budget before the AI call, flagged as truncated",
+  "formula-injection.csv": "Parses: values stored as text; CSV export prefixes = + - @ cells with a quote",
+  "reupload-small-changed.csv": "Upload after small/: only MG-ST-250-WH changes price, no duplicate products created",
+  "reupload-small-identical.csv": "Upload after small/: nothing changes, every row skipped as unchanged",
+  "catalog.numbers": "Rejected before upload: unsupported file type",
+  "renamed-pdf.csv": "Rejected by content sniffing: a PDF renamed to .csv",
+  "oversized-photo.png": "Rejected before upload: over the 10 MB photo limit",
+  "zero-byte-photo.jpg": "Rejected before upload: the file is empty",
+  "zip-with-junk.zip": "Extracts only nested/deeper/TC-PL-20_front.jpg; skips __MACOSX, .DS_Store, and refuses ../ paths",
+  "zip-bomb-lite.zip": "Rejected: uncompressed size over the cap (200 MB from a tiny archive)"
+}

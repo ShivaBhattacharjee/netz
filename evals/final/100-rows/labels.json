@@ -1,0 +1,2251 @@
+{
+ "file": "supplier-sheet.csv",
+ "header_row": 3,
+ "total_rows": 100,
+ "expected_row_counts": {
+  "done": 91,
+  "needs_review": 9,
+  "failed": 0
+ },
+ "products": [
+  {
+   "group": "LU-MUG-00001",
+   "source_rows": [
+    90
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "porcelain",
+    "color": "sage"
+   },
+   "variants": [
+    {
+     "sku": "LU-MUG-00001-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": 13799,
+     "currency": "EUR",
+     "weight_grams": 320
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "LO-VAS-00002",
+   "source_rows": [
+    15,
+    97
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "stoneware",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "LO-VAS-00002-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": null,
+     "currency": "EUR",
+     "weight_grams": 700
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "needs_review",
+   "expected_review_reason": "Two prices for SKU LO-VAS-00002-18"
+  },
+  {
+   "group": "RH-CUS-00003",
+   "source_rows": [
+    6
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "linen",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "RH-CUS-00003-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": 5199,
+     "currency": "EUR",
+     "weight_grams": 180
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "washable at 40 °C",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "OL-CUS-00004",
+   "source_rows": [
+    33
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "cotton",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "OL-CUS-00004-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 181
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "RH-PLA-00005",
+   "source_rows": [
+    78,
+    91
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "concrete"
+   },
+   "variants": [
+    {
+     "sku": "RH-PLA-00005-12-TE",
+     "options": {
+      "size": "12 cm",
+      "color": "terracotta"
+     },
+     "price_cents": 1999,
+     "currency": "EUR",
+     "weight_grams": 600
+    },
+    {
+     "sku": "RH-PLA-00005-12-NA",
+     "options": {
+      "size": "12 cm",
+      "color": "natural"
+     },
+     "price_cents": 1999,
+     "currency": "EUR",
+     "weight_grams": 600
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "frost-resistant",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "IR-CUS-00006",
+   "source_rows": [
+    8,
+    19
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "cotton",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "IR-CUS-00006-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": 5099,
+     "currency": "EUR",
+     "weight_grams": 180
+    },
+    {
+     "sku": "IR-CUS-00006-50",
+     "options": {
+      "size": "50 × 50 cm"
+     },
+     "price_cents": 5499,
+     "currency": "EUR",
+     "weight_grams": 240
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "VE-CUS-00007",
+   "source_rows": [
+    20,
+    23
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "linen"
+   },
+   "variants": [
+    {
+     "sku": "VE-CUS-00007-40-NA",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "natural"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 181
+    },
+    {
+     "sku": "VE-CUS-00007-40-OC",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "ochre"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 180
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "washable at 40 °C",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "FJ-MUG-00008",
+   "source_rows": [
+    87,
+    92
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "porcelain",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "FJ-MUG-00008-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": 13799,
+     "currency": "EUR",
+     "weight_grams": 320
+    },
+    {
+     "sku": "FJ-MUG-00008-350",
+     "options": {
+      "size": "350 ml"
+     },
+     "price_cents": 18799,
+     "currency": "EUR",
+     "weight_grams": 410
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "KI-MUG-00009",
+   "source_rows": [
+    32,
+    56
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "stoneware"
+   },
+   "variants": [
+    {
+     "sku": "KI-MUG-00009-250-SA",
+     "options": {
+      "size": "250 ml",
+      "color": "sage"
+     },
+     "price_cents": 13899,
+     "currency": "EUR",
+     "weight_grams": 320
+    },
+    {
+     "sku": "KI-MUG-00009-250-OC",
+     "options": {
+      "size": "250 ml",
+      "color": "ochre"
+     },
+     "price_cents": 13899,
+     "currency": "EUR",
+     "weight_grams": 318
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "LU-CUS-00010",
+   "source_rows": [
+    80
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "linen",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "LU-CUS-00010-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 180
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "washable at 40 °C",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "JU-VAS-00011",
+   "source_rows": [
+    102
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "stoneware",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "JU-VAS-00011-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": 3199,
+     "currency": "EUR",
+     "weight_grams": 700
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "IR-MUG-00012",
+   "source_rows": [
+    44,
+    52
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "porcelain",
+    "color": "ochre"
+   },
+   "variants": [
+    {
+     "sku": "IR-MUG-00012-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": null,
+     "currency": "EUR",
+     "weight_grams": 320
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "dishwasher-safe",
+     "column": "Notes"
+    },
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "needs_review",
+   "expected_review_reason": "Two prices for SKU IR-MUG-00012-250"
+  },
+  {
+   "group": "IR-CUS-00013",
+   "source_rows": [
+    50,
+    55,
+    82,
+    96
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "linen"
+   },
+   "variants": [
+    {
+     "sku": "IR-CUS-00013-40-OC",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "ochre"
+     },
+     "price_cents": 5099,
+     "currency": "EUR",
+     "weight_grams": 180
+    },
+    {
+     "sku": "IR-CUS-00013-50-OC",
+     "options": {
+      "size": "50 × 50 cm",
+      "color": "ochre"
+     },
+     "price_cents": 5499,
+     "currency": "EUR",
+     "weight_grams": 227
+    },
+    {
+     "sku": "IR-CUS-00013-40-SA",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "sage"
+     },
+     "price_cents": 5099,
+     "currency": "EUR",
+     "weight_grams": 180
+    },
+    {
+     "sku": "IR-CUS-00013-50-SA",
+     "options": {
+      "size": "50 × 50 cm",
+      "color": "sage"
+     },
+     "price_cents": 5699,
+     "currency": "EUR",
+     "weight_grams": 240
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "OEKO-TEX certified",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "SO-VAS-00014",
+   "source_rows": [
+    74,
+    98
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "stoneware",
+    "color": "sage"
+   },
+   "variants": [
+    {
+     "sku": "SO-VAS-00014-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 700
+    },
+    {
+     "sku": "SO-VAS-00014-28",
+     "options": {
+      "size": "28 cm"
+     },
+     "price_cents": 3699,
+     "currency": "EUR",
+     "weight_grams": 1400
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "handmade",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "LU-CAN-00015",
+   "source_rows": [
+    17,
+    28,
+    30,
+    64
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax"
+   },
+   "variants": [
+    {
+     "sku": "LU-CAN-00015-180-WH",
+     "options": {
+      "size": "180 g",
+      "color": "white"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 260
+    },
+    {
+     "sku": "LU-CAN-00015-320-WH",
+     "options": {
+      "size": "320 g",
+      "color": "white"
+     },
+     "price_cents": 18199,
+     "currency": "EUR",
+     "weight_grams": 450
+    },
+    {
+     "sku": "LU-CAN-00015-180-NA",
+     "options": {
+      "size": "180 g",
+      "color": "natural"
+     },
+     "price_cents": 11099,
+     "currency": "EUR",
+     "weight_grams": 272
+    },
+    {
+     "sku": "LU-CAN-00015-320-NA",
+     "options": {
+      "size": "320 g",
+      "color": "natural"
+     },
+     "price_cents": 18099,
+     "currency": "EUR",
+     "weight_grams": 450
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "JU-PLA-00016",
+   "source_rows": [
+    11,
+    66,
+    72
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "concrete",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "JU-PLA-00016-12",
+     "options": {
+      "size": "12 cm"
+     },
+     "price_cents": 1999,
+     "currency": "EUR",
+     "weight_grams": 600
+    },
+    {
+     "sku": "JU-PLA-00016-20",
+     "options": {
+      "size": "20 cm"
+     },
+     "price_cents": 2499,
+     "currency": "EUR",
+     "weight_grams": 1800
+    },
+    {
+     "sku": "JU-PLA-00016-30",
+     "options": {
+      "size": "30 cm"
+     },
+     "price_cents": 3199,
+     "currency": "EUR",
+     "weight_grams": 4200
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "VE-CAN-00017",
+   "source_rows": [
+    12,
+    67
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "VE-CAN-00017-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 260
+    },
+    {
+     "sku": "VE-CAN-00017-320",
+     "options": {
+      "size": "320 g"
+     },
+     "price_cents": null,
+     "currency": "EUR",
+     "weight_grams": 450
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "vegan",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "needs_review",
+   "expected_review_reason": "No price for size 320 g"
+  },
+  {
+   "group": "AL-MUG-00018",
+   "source_rows": [
+    46
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "porcelain",
+    "color": "ochre"
+   },
+   "variants": [
+    {
+     "sku": "AL-MUG-00018-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": 13899,
+     "currency": "EUR",
+     "weight_grams": 320
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "FJ-VAS-00019",
+   "source_rows": [
+    47
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "stoneware",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "FJ-VAS-00019-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": 3199,
+     "currency": "EUR",
+     "weight_grams": 680
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "RH-CAN-00020",
+   "source_rows": [
+    26,
+    39,
+    58,
+    88
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax"
+   },
+   "variants": [
+    {
+     "sku": "RH-CAN-00020-180-NA",
+     "options": {
+      "size": "180 g",
+      "color": "natural"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 272
+    },
+    {
+     "sku": "RH-CAN-00020-320-NA",
+     "options": {
+      "size": "320 g",
+      "color": "natural"
+     },
+     "price_cents": 18099,
+     "currency": "EUR",
+     "weight_grams": 450
+    },
+    {
+     "sku": "RH-CAN-00020-180-WH",
+     "options": {
+      "size": "180 g",
+      "color": "white"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 260
+    },
+    {
+     "sku": "RH-CAN-00020-320-WH",
+     "options": {
+      "size": "320 g",
+      "color": "white"
+     },
+     "price_cents": 18099,
+     "currency": "EUR",
+     "weight_grams": 450
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "vegan",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "AL-MUG-00021",
+   "source_rows": [
+    21,
+    61
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "stoneware",
+    "color": "sage"
+   },
+   "variants": [
+    {
+     "sku": "AL-MUG-00021-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": 13799,
+     "currency": "EUR",
+     "weight_grams": 320
+    },
+    {
+     "sku": "AL-MUG-00021-350",
+     "options": {
+      "size": "350 ml"
+     },
+     "price_cents": 18899,
+     "currency": "EUR",
+     "weight_grams": 410
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "dishwasher-safe",
+     "column": "Notes"
+    },
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "KI-CAN-00022",
+   "source_rows": [
+    85,
+    89
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "KI-CAN-00022-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 11099,
+     "currency": "EUR",
+     "weight_grams": 260
+    },
+    {
+     "sku": "KI-CAN-00022-320",
+     "options": {
+      "size": "320 g"
+     },
+     "price_cents": 18099,
+     "currency": "EUR",
+     "weight_grams": 450
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "CA-CAN-00023",
+   "source_rows": [
+    48,
+    94
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "CA-CAN-00023-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 260
+    },
+    {
+     "sku": "CA-CAN-00023-320",
+     "options": {
+      "size": "320 g"
+     },
+     "price_cents": 18099,
+     "currency": "EUR",
+     "weight_grams": 450
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "JU-CAN-00024",
+   "source_rows": [
+    25,
+    84,
+    95,
+    101
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax"
+   },
+   "variants": [
+    {
+     "sku": "JU-CAN-00024-180-WH",
+     "options": {
+      "size": "180 g",
+      "color": "white"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 272
+    },
+    {
+     "sku": "JU-CAN-00024-320-WH",
+     "options": {
+      "size": "320 g",
+      "color": "white"
+     },
+     "price_cents": 17999,
+     "currency": "EUR",
+     "weight_grams": 450
+    },
+    {
+     "sku": "JU-CAN-00024-180-NA",
+     "options": {
+      "size": "180 g",
+      "color": "natural"
+     },
+     "price_cents": 11099,
+     "currency": "EUR",
+     "weight_grams": 260
+    },
+    {
+     "sku": "JU-CAN-00024-320-NA",
+     "options": {
+      "size": "320 g",
+      "color": "natural"
+     },
+     "price_cents": 18199,
+     "currency": "EUR",
+     "weight_grams": 450
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "MI-CUS-00025",
+   "source_rows": [
+    71,
+    93
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "linen",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "MI-CUS-00025-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": null,
+     "currency": "EUR",
+     "weight_grams": 181
+    },
+    {
+     "sku": "MI-CUS-00025-50",
+     "options": {
+      "size": "50 × 50 cm"
+     },
+     "price_cents": 5499,
+     "currency": "EUR",
+     "weight_grams": 240
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "OEKO-TEX certified",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "needs_review",
+   "expected_review_reason": "No price for size 40 × 40 cm"
+  },
+  {
+   "group": "VE-VAS-00026",
+   "source_rows": [
+    18,
+    24,
+    53,
+    57
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "glass"
+   },
+   "variants": [
+    {
+     "sku": "VE-VAS-00026-18-WH",
+     "options": {
+      "size": "18 cm",
+      "color": "white"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 700
+    },
+    {
+     "sku": "VE-VAS-00026-28-WH",
+     "options": {
+      "size": "28 cm",
+      "color": "white"
+     },
+     "price_cents": 3499,
+     "currency": "EUR",
+     "weight_grams": 1400
+    },
+    {
+     "sku": "VE-VAS-00026-18-SA",
+     "options": {
+      "size": "18 cm",
+      "color": "sage"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 700
+    },
+    {
+     "sku": "VE-VAS-00026-28-SA",
+     "options": {
+      "size": "28 cm",
+      "color": "sage"
+     },
+     "price_cents": 3599,
+     "currency": "EUR",
+     "weight_grams": 1400
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "VE-CUS-00027",
+   "source_rows": [
+    14,
+    22
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "cotton"
+   },
+   "variants": [
+    {
+     "sku": "VE-CUS-00027-40-SA",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "sage"
+     },
+     "price_cents": 5199,
+     "currency": "EUR",
+     "weight_grams": 180
+    },
+    {
+     "sku": "VE-CUS-00027-40-CH",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "charcoal"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 180
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "washable at 40 °C",
+     "column": "Notes"
+    },
+    {
+     "text": "OEKO-TEX certified",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "RH-VAS-00028",
+   "source_rows": [
+    4
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "glass",
+    "color": "ochre"
+   },
+   "variants": [
+    {
+     "sku": "RH-VAS-00028-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": 3199,
+     "currency": "EUR",
+     "weight_grams": 700
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "handmade",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "CA-CAN-00029",
+   "source_rows": [
+    99
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "CA-CAN-00029-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 11199,
+     "currency": "EUR",
+     "weight_grams": 272
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "vegan",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "SO-CAN-00030",
+   "source_rows": [
+    35
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "SO-CAN-00030-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 272
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "vegan",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "CA-VAS-00031",
+   "source_rows": [
+    10,
+    45,
+    81,
+    86
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "glass"
+   },
+   "variants": [
+    {
+     "sku": "CA-VAS-00031-18-WH",
+     "options": {
+      "size": "18 cm",
+      "color": "white"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 700
+    },
+    {
+     "sku": "CA-VAS-00031-28-WH",
+     "options": {
+      "size": "28 cm",
+      "color": "white"
+     },
+     "price_cents": 3599,
+     "currency": "EUR",
+     "weight_grams": 1400
+    },
+    {
+     "sku": "CA-VAS-00031-18-NA",
+     "options": {
+      "size": "18 cm",
+      "color": "natural"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 700
+    },
+    {
+     "sku": "CA-VAS-00031-28-NA",
+     "options": {
+      "size": "28 cm",
+      "color": "natural"
+     },
+     "price_cents": 3599,
+     "currency": "EUR",
+     "weight_grams": 1400
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "SO-MUG-00032",
+   "source_rows": [
+    103
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "stoneware",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "SO-MUG-00032-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": 13999,
+     "currency": "EUR",
+     "weight_grams": 320
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "CA-VAS-00033",
+   "source_rows": [
+    41
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "glass",
+    "color": "white"
+   },
+   "variants": [
+    {
+     "sku": "CA-VAS-00033-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": null,
+     "currency": "EUR",
+     "weight_grams": 700
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "handmade",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "needs_review",
+   "expected_review_reason": "No price for size 18 cm"
+  },
+  {
+   "group": "FJ-MUG-00034",
+   "source_rows": [
+    9,
+    16,
+    62,
+    83
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "stoneware"
+   },
+   "variants": [
+    {
+     "sku": "FJ-MUG-00034-250-CH",
+     "options": {
+      "size": "250 ml",
+      "color": "charcoal"
+     },
+     "price_cents": 13999,
+     "currency": "EUR",
+     "weight_grams": 320
+    },
+    {
+     "sku": "FJ-MUG-00034-350-CH",
+     "options": {
+      "size": "350 ml",
+      "color": "charcoal"
+     },
+     "price_cents": 18999,
+     "currency": "EUR",
+     "weight_grams": 410
+    },
+    {
+     "sku": "FJ-MUG-00034-250-WH",
+     "options": {
+      "size": "250 ml",
+      "color": "white"
+     },
+     "price_cents": 13899,
+     "currency": "EUR",
+     "weight_grams": 318
+    },
+    {
+     "sku": "FJ-MUG-00034-350-WH",
+     "options": {
+      "size": "350 ml",
+      "color": "white"
+     },
+     "price_cents": 18999,
+     "currency": "EUR",
+     "weight_grams": 410
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "OL-CAN-00035",
+   "source_rows": [
+    69
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "OL-CAN-00035-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 10999,
+     "currency": "EUR",
+     "weight_grams": 260
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "vegan",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "MI-PLA-00036",
+   "source_rows": [
+    76,
+    79,
+    100
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "stoneware",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "MI-PLA-00036-12",
+     "options": {
+      "size": "12 cm"
+     },
+     "price_cents": 1999,
+     "currency": "EUR",
+     "weight_grams": 590
+    },
+    {
+     "sku": "MI-PLA-00036-20",
+     "options": {
+      "size": "20 cm"
+     },
+     "price_cents": 2499,
+     "currency": "EUR",
+     "weight_grams": 1800
+    },
+    {
+     "sku": "MI-PLA-00036-30",
+     "options": {
+      "size": "30 cm"
+     },
+     "price_cents": 3199,
+     "currency": "EUR",
+     "weight_grams": 4200
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "frost-resistant",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "LU-MUG-00037",
+   "source_rows": [
+    73
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "stoneware",
+    "color": "sage"
+   },
+   "variants": [
+    {
+     "sku": "LU-MUG-00037-250",
+     "options": {
+      "size": "250 ml"
+     },
+     "price_cents": 13799,
+     "currency": "EUR",
+     "weight_grams": 320
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "OL-CUS-00038",
+   "source_rows": [
+    29,
+    43
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "cotton"
+   },
+   "variants": [
+    {
+     "sku": "OL-CUS-00038-40-CH",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "charcoal"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 180
+    },
+    {
+     "sku": "OL-CUS-00038-40-OC",
+     "options": {
+      "size": "40 × 40 cm",
+      "color": "ochre"
+     },
+     "price_cents": 5099,
+     "currency": "EUR",
+     "weight_grams": 181
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "VE-VAS-00039",
+   "source_rows": [
+    5
+   ],
+   "category": "Home & Garden > Vases",
+   "attributes": {
+    "material": "stoneware",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "VE-VAS-00039-18",
+     "options": {
+      "size": "18 cm"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 700
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "handmade",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "dishwasher-safe",
+    "watertight guarantee"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "OL-CUS-00040",
+   "source_rows": [
+    37
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "cotton",
+    "color": "sage"
+   },
+   "variants": [
+    {
+     "sku": "OL-CUS-00040-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": 5199,
+     "currency": "EUR",
+     "weight_grams": 181
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "OEKO-TEX certified",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "RH-MUG-00041",
+   "source_rows": [
+    7,
+    54,
+    63,
+    77
+   ],
+   "category": "Kitchen & Dining > Mugs",
+   "attributes": {
+    "material": "porcelain"
+   },
+   "variants": [
+    {
+     "sku": "RH-MUG-00041-250-CH",
+     "options": {
+      "size": "250 ml",
+      "color": "charcoal"
+     },
+     "price_cents": 13999,
+     "currency": "EUR",
+     "weight_grams": 320
+    },
+    {
+     "sku": "RH-MUG-00041-350-CH",
+     "options": {
+      "size": "350 ml",
+      "color": "charcoal"
+     },
+     "price_cents": 18999,
+     "currency": "EUR",
+     "weight_grams": 410
+    },
+    {
+     "sku": "RH-MUG-00041-250-OC",
+     "options": {
+      "size": "250 ml",
+      "color": "ochre"
+     },
+     "price_cents": 13899,
+     "currency": "EUR",
+     "weight_grams": 318
+    },
+    {
+     "sku": "RH-MUG-00041-350-OC",
+     "options": {
+      "size": "350 ml",
+      "color": "ochre"
+     },
+     "price_cents": 18799,
+     "currency": "EUR",
+     "weight_grams": 410
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "microwave-safe",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "lead-free",
+    "handmade",
+    "oven-safe"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "LO-PLA-00042",
+   "source_rows": [
+    34,
+    38,
+    42,
+    49,
+    59,
+    68
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "terracotta"
+   },
+   "variants": [
+    {
+     "sku": "LO-PLA-00042-12-NA",
+     "options": {
+      "size": "12 cm",
+      "color": "natural"
+     },
+     "price_cents": 2099,
+     "currency": "EUR",
+     "weight_grams": 600
+    },
+    {
+     "sku": "LO-PLA-00042-20-NA",
+     "options": {
+      "size": "20 cm",
+      "color": "natural"
+     },
+     "price_cents": 2699,
+     "currency": "EUR",
+     "weight_grams": 1814
+    },
+    {
+     "sku": "LO-PLA-00042-30-NA",
+     "options": {
+      "size": "30 cm",
+      "color": "natural"
+     },
+     "price_cents": 2999,
+     "currency": "EUR",
+     "weight_grams": 4200
+    },
+    {
+     "sku": "LO-PLA-00042-12-SA",
+     "options": {
+      "size": "12 cm",
+      "color": "sage"
+     },
+     "price_cents": 2099,
+     "currency": "EUR",
+     "weight_grams": 600
+    },
+    {
+     "sku": "LO-PLA-00042-20-SA",
+     "options": {
+      "size": "20 cm",
+      "color": "sage"
+     },
+     "price_cents": 2699,
+     "currency": "EUR",
+     "weight_grams": 1800
+    },
+    {
+     "sku": "LO-PLA-00042-30-SA",
+     "options": {
+      "size": "30 cm",
+      "color": "sage"
+     },
+     "price_cents": 3199,
+     "currency": "EUR",
+     "weight_grams": 4200
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "frost-resistant",
+     "column": "Notes"
+    },
+    {
+     "text": "drainage hole",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "IR-PLA-00043",
+   "source_rows": [
+    27,
+    40
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "terracotta"
+   },
+   "variants": [
+    {
+     "sku": "IR-PLA-00043-12-CH",
+     "options": {
+      "size": "12 cm",
+      "color": "charcoal"
+     },
+     "price_cents": 1999,
+     "currency": "EUR",
+     "weight_grams": 600
+    },
+    {
+     "sku": "IR-PLA-00043-12-SA",
+     "options": {
+      "size": "12 cm",
+      "color": "sage"
+     },
+     "price_cents": 1999,
+     "currency": "EUR",
+     "weight_grams": 600
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "drainage hole",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "AL-PLA-00044",
+   "source_rows": [
+    31,
+    60
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "concrete",
+    "color": "terracotta"
+   },
+   "variants": [
+    {
+     "sku": "AL-PLA-00044-12",
+     "options": {
+      "size": "12 cm"
+     },
+     "price_cents": 2199,
+     "currency": "EUR",
+     "weight_grams": 600
+    },
+    {
+     "sku": "AL-PLA-00044-20",
+     "options": {
+      "size": "20 cm"
+     },
+     "price_cents": 2699,
+     "currency": "EUR",
+     "weight_grams": 1800
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "frost-resistant",
+     "column": "Notes"
+    },
+    {
+     "text": "drainage hole",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "IR-CUS-00045",
+   "source_rows": [
+    36
+   ],
+   "category": "Home > Textiles > Cushions",
+   "attributes": {
+    "material": "linen",
+    "color": "ochre"
+   },
+   "variants": [
+    {
+     "sku": "IR-CUS-00045-40",
+     "options": {
+      "size": "40 × 40 cm"
+     },
+     "price_cents": 4999,
+     "currency": "EUR",
+     "weight_grams": 180
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "washable at 40 °C",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "organic",
+    "hypoallergenic"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "KI-CAN-00046",
+   "source_rows": [
+    65
+   ],
+   "category": "Home > Fragrance > Candles",
+   "attributes": {
+    "material": "soy wax",
+    "color": "natural"
+   },
+   "variants": [
+    {
+     "sku": "KI-CAN-00046-180",
+     "options": {
+      "size": "180 g"
+     },
+     "price_cents": 11199,
+     "currency": "EUR",
+     "weight_grams": 260
+    }
+   ],
+   "allowed_claims": [],
+   "forbidden_claims": [
+    "organic",
+    "non-toxic",
+    "paraffin-free"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  },
+  {
+   "group": "LO-PLA-00047",
+   "source_rows": [
+    13
+   ],
+   "category": "Home & Garden > Planters",
+   "attributes": {
+    "material": "concrete",
+    "color": "charcoal"
+   },
+   "variants": [
+    {
+     "sku": "LO-PLA-00047-12-CH",
+     "options": {
+      "size": "12 cm"
+     },
+     "price_cents": 2199,
+     "currency": "EUR",
+     "weight_grams": 600
+    }
+   ],
+   "allowed_claims": [
+    {
+     "text": "drainage hole",
+     "column": "Notes"
+    }
+   ],
+   "forbidden_claims": [
+    "frost-proof",
+    "weatherproof",
+    "UV-resistant"
+   ],
+   "expected_status": "ready",
+   "expected_review_reason": null
+  }
+ ],
+ "duplicate_rows": [
+  {
+   "row": 51,
+   "duplicate_of": 102
+  },
+  {
+   "row": 70,
+   "duplicate_of": 64
+  },
+  {
+   "row": 75,
+   "duplicate_of": 96
+  }
+ ],
+ "failed_rows": [],
+ "photos": {
+  "matched": {
+   "KI-CAN-00046-180_front.jpg": "KI-CAN-00046",
+   "KI-CAN-00046-180_detail.jpg": "KI-CAN-00046",
+   "KI-CAN-00046-180_side.jpg": "KI-CAN-00046",
+   "CA-CAN-00029-180_front.jpg": "CA-CAN-00029",
+   "CA-CAN-00029-180_detail.jpg": "CA-CAN-00029",
+   "CA-CAN-00029-180_side.jpg": "CA-CAN-00029",
+   "FJ-MUG-00008-250_front.jpg": "FJ-MUG-00008",
+   "FJ-MUG-00008-250_detail.jpg": "FJ-MUG-00008",
+   "FJ-MUG-00008-250_side.jpg": "FJ-MUG-00008",
+   "RH-VAS-00028-18_front.jpg": "RH-VAS-00028",
+   "RH-VAS-00028-18_detail.jpg": "RH-VAS-00028",
+   "RH-VAS-00028-18_side.jpg": "RH-VAS-00028",
+   "VE-VAS-00039-18_front.jpg": "VE-VAS-00039",
+   "VE-VAS-00039-18_detail.jpg": "VE-VAS-00039",
+   "VE-VAS-00039-18_side.jpg": "VE-VAS-00039",
+   "AL-MUG-00018-250_front.jpg": "AL-MUG-00018",
+   "AL-MUG-00018-250_detail.jpg": "AL-MUG-00018",
+   "AL-MUG-00018-250_side.jpg": "AL-MUG-00018",
+   "SO-MUG-00032-250_front.jpg": "SO-MUG-00032",
+   "SO-MUG-00032-250_detail.jpg": "SO-MUG-00032",
+   "SO-MUG-00032-250_side.jpg": "SO-MUG-00032",
+   "FJ-VAS-00019-18_front.jpg": "FJ-VAS-00019",
+   "FJ-VAS-00019-18_detail.jpg": "FJ-VAS-00019",
+   "FJ-VAS-00019-18_side.jpg": "FJ-VAS-00019",
+   "IR-MUG-00012-250_front.jpg": "IR-MUG-00012",
+   "IR-MUG-00012-250_detail.jpg": "IR-MUG-00012",
+   "IR-MUG-00012-250_side.jpg": "IR-MUG-00012",
+   "LO-PLA-00047-12-CH_front.jpg": "LO-PLA-00047",
+   "LO-PLA-00047-12-CH_detail.jpg": "LO-PLA-00047",
+   "LO-PLA-00047-12-CH_side.jpg": "LO-PLA-00047",
+   "LU-MUG-00001-250_front.jpg": "LU-MUG-00001",
+   "LU-MUG-00001-250_detail.jpg": "LU-MUG-00001",
+   "LU-MUG-00001-250_side.jpg": "LU-MUG-00001",
+   "LU-MUG-00037-250_front.jpg": "LU-MUG-00037",
+   "LU-MUG-00037-250_detail.jpg": "LU-MUG-00037",
+   "LU-MUG-00037-250_side.jpg": "LU-MUG-00037",
+   "LU-CAN-00015-180-WH_front.jpg": "LU-CAN-00015",
+   "LU-CAN-00015-180-WH_detail.jpg": "LU-CAN-00015",
+   "LU-CAN-00015-180-WH_side.jpg": "LU-CAN-00015",
+   "SO-VAS-00014-18_front.jpg": "SO-VAS-00014",
+   "SO-VAS-00014-18_detail.jpg": "SO-VAS-00014",
+   "SO-VAS-00014-18_side.jpg": "SO-VAS-00014",
+   "IR-CUS-00045-40_front.jpg": "IR-CUS-00045",
+   "IR-CUS-00045-40_detail.jpg": "IR-CUS-00045",
+   "IR-CUS-00045-40_side.jpg": "IR-CUS-00045",
+   "JU-CAN-00024-180-WH_front.jpg": "JU-CAN-00024",
+   "JU-CAN-00024-180-WH_detail.jpg": "JU-CAN-00024",
+   "JU-CAN-00024-180-WH_side.jpg": "JU-CAN-00024",
+   "RH-PLA-00005-12-TE_front.jpg": "RH-PLA-00005",
+   "RH-PLA-00005-12-TE_detail.jpg": "RH-PLA-00005",
+   "RH-PLA-00005-12-TE_side.jpg": "RH-PLA-00005",
+   "IR-PLA-00043-12-CH_front.jpg": "IR-PLA-00043",
+   "IR-PLA-00043-12-CH_detail.jpg": "IR-PLA-00043",
+   "IR-PLA-00043-12-CH_side.jpg": "IR-PLA-00043",
+   "VE-CAN-00017-180_front.jpg": "VE-CAN-00017",
+   "VE-CAN-00017-180_detail.jpg": "VE-CAN-00017",
+   "VE-CAN-00017-180_side.jpg": "VE-CAN-00017",
+   "CA-VAS-00031-18-WH_front.jpg": "CA-VAS-00031",
+   "CA-VAS-00031-18-WH_detail.jpg": "CA-VAS-00031",
+   "CA-VAS-00031-18-WH_side.jpg": "CA-VAS-00031",
+   "CA-VAS-00033-18_front.jpg": "CA-VAS-00033",
+   "CA-VAS-00033-18_detail.jpg": "CA-VAS-00033",
+   "CA-VAS-00033-18_side.jpg": "CA-VAS-00033",
+   "OL-CAN-00035-180_front.jpg": "OL-CAN-00035",
+   "OL-CAN-00035-180_detail.jpg": "OL-CAN-00035",
+   "OL-CAN-00035-180_side.jpg": "OL-CAN-00035",
+   "VE-VAS-00026-18-WH_front.jpg": "VE-VAS-00026",
+   "VE-VAS-00026-18-WH_detail.jpg": "VE-VAS-00026",
+   "VE-VAS-00026-18-WH_side.jpg": "VE-VAS-00026",
+   "CA-CAN-00023-180_front.jpg": "CA-CAN-00023",
+   "CA-CAN-00023-180_detail.jpg": "CA-CAN-00023",
+   "CA-CAN-00023-180_side.jpg": "CA-CAN-00023",
+   "LO-VAS-00002-18_front.jpg": "LO-VAS-00002",
+   "LO-VAS-00002-18_detail.jpg": "LO-VAS-00002",
+   "LO-VAS-00002-18_side.jpg": "LO-VAS-00002",
+   "JU-PLA-00016-12_front.jpg": "JU-PLA-00016",
+   "JU-PLA-00016-12_detail.jpg": "JU-PLA-00016",
+   "JU-PLA-00016-12_side.jpg": "JU-PLA-00016",
+   "RH-CAN-00020-180-NA_front.jpg": "RH-CAN-00020",
+   "RH-CAN-00020-180-NA_detail.jpg": "RH-CAN-00020",
+   "RH-CAN-00020-180-NA_side.jpg": "RH-CAN-00020",
+   "LU-CUS-00010-40_front.jpg": "LU-CUS-00010",
+   "LU-CUS-00010-40_detail.jpg": "LU-CUS-00010",
+   "LU-CUS-00010-40_side.jpg": "LU-CUS-00010",
+   "LO-PLA-00042-12-NA_front.jpg": "LO-PLA-00042",
+   "LO-PLA-00042-12-NA_detail.jpg": "LO-PLA-00042",
+   "LO-PLA-00042-12-NA_side.jpg": "LO-PLA-00042",
+   "SO-CAN-00030-180_front.jpg": "SO-CAN-00030",
+   "SO-CAN-00030-180_detail.jpg": "SO-CAN-00030",
+   "SO-CAN-00030-180_side.jpg": "SO-CAN-00030",
+   "OL-CUS-00038-40-CH_front.jpg": "OL-CUS-00038",
+   "OL-CUS-00038-40-CH_detail.jpg": "OL-CUS-00038",
+   "OL-CUS-00038-40-CH_side.jpg": "OL-CUS-00038",
+   "RH-CUS-00003-40_front.jpg": "RH-CUS-00003",
+   "RH-CUS-00003-40_detail.jpg": "RH-CUS-00003",
+   "RH-CUS-00003-40_side.jpg": "RH-CUS-00003",
+   "AL-PLA-00044-12_front.jpg": "AL-PLA-00044",
+   "AL-PLA-00044-12_detail.jpg": "AL-PLA-00044",
+   "AL-PLA-00044-12_side.jpg": "AL-PLA-00044",
+   "RH-MUG-00041-250-CH_front.jpg": "RH-MUG-00041",
+   "RH-MUG-00041-250-CH_detail.jpg": "RH-MUG-00041",
+   "RH-MUG-00041-250-CH_side.jpg": "RH-MUG-00041",
+   "KI-CAN-00022-180_front.jpg": "KI-CAN-00022",
+   "KI-CAN-00022-180_detail.jpg": "KI-CAN-00022",
+   "KI-CAN-00022-180_side.jpg": "KI-CAN-00022",
+   "IR-CUS-00006-40_front.jpg": "IR-CUS-00006",
+   "IR-CUS-00006-40_detail.jpg": "IR-CUS-00006",
+   "IR-CUS-00006-40_side.jpg": "IR-CUS-00006",
+   "JU-VAS-00011-18_front.jpg": "JU-VAS-00011",
+   "JU-VAS-00011-18_detail.jpg": "JU-VAS-00011",
+   "JU-VAS-00011-18_side.jpg": "JU-VAS-00011",
+   "FJ-MUG-00034-250-CH_front.jpg": "FJ-MUG-00034",
+   "FJ-MUG-00034-250-CH_detail.jpg": "FJ-MUG-00034",
+   "FJ-MUG-00034-250-CH_side.jpg": "FJ-MUG-00034",
+   "OL-CUS-00040-40_front.jpg": "OL-CUS-00040",
+   "OL-CUS-00040-40_detail.jpg": "OL-CUS-00040",
+   "OL-CUS-00040-40_side.jpg": "OL-CUS-00040",
+   "KI-MUG-00009-250-SA_front.jpg": "KI-MUG-00009",
+   "KI-MUG-00009-250-SA_detail.jpg": "KI-MUG-00009",
+   "KI-MUG-00009-250-SA_side.jpg": "KI-MUG-00009",
+   "MI-PLA-00036-12_front.jpg": "MI-PLA-00036",
+   "MI-PLA-00036-12_detail.jpg": "MI-PLA-00036",
+   "MI-PLA-00036-12_side.jpg": "MI-PLA-00036",
+   "VE-CUS-00007-40-NA_front.jpg": "VE-CUS-00007",
+   "VE-CUS-00007-40-NA_detail.jpg": "VE-CUS-00007",
+   "VE-CUS-00007-40-NA_side.jpg": "VE-CUS-00007",
+   "OL-CUS-00004-40_front.jpg": "OL-CUS-00004",
+   "OL-CUS-00004-40_detail.jpg": "OL-CUS-00004",
+   "OL-CUS-00004-40_side.jpg": "OL-CUS-00004",
+   "AL-MUG-00021-250_front.jpg": "AL-MUG-00021",
+   "AL-MUG-00021-250_detail.jpg": "AL-MUG-00021",
+   "AL-MUG-00021-250_side.jpg": "AL-MUG-00021",
+   "MI-CUS-00025-40_front.jpg": "MI-CUS-00025",
+   "MI-CUS-00025-40_detail.jpg": "MI-CUS-00025",
+   "MI-CUS-00025-40_side.jpg": "MI-CUS-00025",
+   "VE-CUS-00027-40-SA_front.jpg": "VE-CUS-00027",
+   "VE-CUS-00027-40-SA_detail.jpg": "VE-CUS-00027",
+   "VE-CUS-00027-40-SA_side.jpg": "VE-CUS-00027",
+   "IR-CUS-00013-40-OC_front.jpg": "IR-CUS-00013",
+   "IR-CUS-00013-40-OC_detail.jpg": "IR-CUS-00013",
+   "IR-CUS-00013-40-OC_side.jpg": "IR-CUS-00013"
+  },
+  "unmatched": [],
+  "duplicate_content": {}
+ }
+}
