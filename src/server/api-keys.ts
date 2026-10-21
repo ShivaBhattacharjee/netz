@@ -50,5 +50,5 @@ export async function storeForKey(secret: string) {
     .update(apiKey)
     .set({ lastUsedAt: new Date() })
     .where(and(eq(apiKey.id, row.keyId), or(isNull(apiKey.lastUsedAt), lt(apiKey.lastUsedAt, new Date(Date.now() - TOUCH_AFTER_MS)))));
-  return { userId: row.userId, store: { id: row.id, name: row.name, slug: row.slug, domain: row.domain } };
+  return { keyId: row.keyId, userId: row.userId, store: { id: row.id, name: row.name, slug: row.slug, domain: row.domain } };
 }

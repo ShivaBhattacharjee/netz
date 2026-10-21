@@ -6,13 +6,36 @@ import { EvalSetError } from "./evals/sets";
 import { ImportInputError } from "./imports";
 import { ProductInputError } from "./products";
 import { WebhookInputError } from "./webhooks";
+import { type Rule, consume } from "./rate-limit";
 
 export function withStore<P>(handler: (ctx: ApiContext, request: Request, params: P) => Promise<Response>, opts: { sessionOnly?: boolean } = {}) {
+const LIMITS = {
+  key: { window: 60, max: 600 },
+  store: { window: 60, max: 1200 },
+  upload: { window: 3600, max: 5000 },
+} satisfies Record<string, Rule>;
+
+/** Applies the per-store and per-API-key request limits; returns a 429 response when one is exceeded. */
+export async function limitRequest(ctx: ApiContext, scope: "api" | "upload" = "api"): Promise<Response | null> {
+  const checks = [
+    scope === "upload" ? consume(`upload:${ctx.store.id}`, LIMITS.upload) : consume(`store:${ctx.store.id}`, LIMITS.store),
+    ...(ctx.keyId ? [consume(`key:${ctx.keyId}`, LIMITS.key)] : []),
+  ];
+  const blocked = (await Promise.all(checks)).find((r) => !r.allowed);
+  if (!blocked) return null;
+  return NextResponse.json(
+    { error: `Too many requests, try again in ${blocked.retryAfter} s` },
+    { status: 429, headers: { "Retry-After": String(blocked.retryAfter) } },
+  );
+}
+
   return async (request: Request, { params }: { params: Promise<P> }) => {
     const ctx = await getApiContext();
     if (!ctx) return NextResponse.json({ error: "Not signed in or invalid API key" }, { status: 401 });
     if (opts.sessionOnly && ctx.via !== "session") return NextResponse.json({ error: "This endpoint needs a signed-in user" }, { status: 403 });
     try {
+    const limited = await limitRequest(ctx);
+    if (limited) return limited;
       return await handler(ctx, request, await params);
     } catch (error) {
       if (error instanceof ImportInputError || error instanceof ProductInputError || error instanceof WebhookInputError || error instanceof ApiKeyInputError || error instanceof EvalSetError) {

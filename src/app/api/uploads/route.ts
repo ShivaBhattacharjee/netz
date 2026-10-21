@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { upload } from "@/db/schema";
 import { getApiContext } from "@/lib/auth/session";
+import { limitRequest } from "@/server/http";
 import { UploadError, type UploadKind, receiveUpload } from "@/server/uploads";
 
 const KINDS = new Set<UploadKind>(["sheet", "zip", "photo"]);
@@ -18,6 +19,8 @@ function cleanFileName(raw: string | null) {
 export async function POST(request: Request) {
   const ctx = await getApiContext();
   if (!ctx) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const limited = await limitRequest(ctx, "upload");
+  if (limited) return limited;
 
   const kind = new URL(request.url).searchParams.get("kind") as UploadKind | null;
   if (!kind || !KINDS.has(kind)) return NextResponse.json({ error: "kind must be sheet, zip or photo" }, { status: 400 });

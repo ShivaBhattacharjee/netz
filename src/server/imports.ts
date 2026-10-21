@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { importGroup, importJob, photo, product, sourceRow, store, upload } from "@/db/schema";
@@ -18,6 +18,8 @@ export const createImportSchema = z.object({
 export class ImportInputError extends Error {}
 
 async function unmatchedPhotoUrls(importIds: string[]) {
+const MAX_RUNNING_IMPORTS = 3;
+
   if (importIds.length === 0) return new Map<string, Map<string, string>>();
   const rows = await db
     .select({ id: photo.id, importId: photo.importId, fileName: photo.fileName })
@@ -66,6 +68,14 @@ export async function createImport(storeId: string, userId: string | null, input
   const [created] = await db
     .insert(importJob)
     .values({
+  const [{ running }] = await db
+    .select({ running: count() })
+    .from(importJob)
+    .where(and(eq(importJob.storeId, storeId), inArray(importJob.status, ["queued", "processing", "paused"])));
+  if (running >= MAX_RUNNING_IMPORTS) {
+    throw new ImportInputError(`At most ${MAX_RUNNING_IMPORTS} imports can run at once. Wait for one to finish or cancel it.`);
+  }
+
       id: newId("imp"),
       storeId,
       createdBy: userId,

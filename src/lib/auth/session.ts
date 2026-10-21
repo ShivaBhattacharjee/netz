@@ -43,6 +43,7 @@ export interface ApiContext {
   userId: string | null;
   store: { id: string; name: string; slug: string; domain: string | null };
   via: "session" | "api_key";
+  keyId: string | null;
 }
 
 export async function getApiContext(): Promise<ApiContext | null> {
@@ -57,5 +58,5 @@ export async function getApiContext(): Promise<ApiContext | null> {
   if (stores.length === 0) return null;
   const wanted = (await cookies()).get(ACTIVE_STORE_COOKIE)?.value;
   const active = stores.find((s) => s.id === wanted) ?? stores[0];
-  return { userId: session.user.id, store: active, via: "session" };
+  return { userId: session.user.id, store: active, via: "session", keyId: null };
 }
