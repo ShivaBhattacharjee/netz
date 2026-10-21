@@ -184,6 +184,18 @@ export function WebhooksView() {
     }
   }
 
+  async function remove(id: string) {
+    const before = data;
+    setData((d) => d && { ...d, webhooks: d.webhooks.filter((w) => w.id !== id) });
+    try {
+      await api(`/api/webhooks/${id}`, { method: "DELETE" });
+      toast.success("Endpoint deleted");
+    } catch (e) {
+      setData(before);
+      toast.error(e instanceof Error ? e.message : "Could not delete the endpoint");
+    }
+  }
+
   const addButton = (label: string) => (
     <Button onClick={() => setAdding(true)}>
       <Plus data-icon="inline-start" />
@@ -241,7 +253,7 @@ export function WebhooksView() {
                         Send test event
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onSelect={() => void run(() => api(`/api/webhooks/${h.id}`, { method: "DELETE" }), "Endpoint deleted")}>
+                      <DropdownMenuItem variant="destructive" onSelect={() => void remove(h.id)}>
                         <Trash2 />
                         Delete
                       </DropdownMenuItem>

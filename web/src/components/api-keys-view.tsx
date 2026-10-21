@@ -224,12 +224,14 @@ export function ApiKeysView() {
               onClick={() => {
                 const target = revoking;
                 if (!target) return;
+                const before = keys;
+                setKeys((k) => k && k.filter((x) => x.id !== target.id));
                 api(`/api/keys/${target.id}`, { method: "DELETE" })
-                  .then(() => {
-                    toast.success("Key revoked");
-                    load();
-                  })
-                  .catch((e: Error) => toast.error(e.message));
+                  .then(() => toast.success("Key revoked"))
+                  .catch((e: Error) => {
+                    setKeys(before);
+                    toast.error(e.message);
+                  });
               }}
             >
               Revoke key
