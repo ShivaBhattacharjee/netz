@@ -240,6 +240,18 @@ export const actions = {
     }
   },
 
+  async unpublish(ids: string[]) {
+    const before = state.products;
+    patchProducts(new Set(ids), (p) => (p.status === "approved" ? { ...p, status: "ready" } : p));
+    try {
+      await api("/api/products/unpublish", { method: "POST", json: { ids } });
+      scheduleRefresh(false);
+    } catch (error) {
+      setState({ products: before });
+      fail(error, "Could not remove from the storefront");
+    }
+  },
+
   async deleteProducts(ids: string[]) {
     const before = state.products;
     const set = new Set(ids);

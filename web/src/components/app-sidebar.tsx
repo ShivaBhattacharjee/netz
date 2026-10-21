@@ -275,6 +275,11 @@ export function AppSidebar({
     { href: "/experiments", label: "Experiments" },
   ];
 
+  const storefrontLeaves: Leaf[] = [
+    { href: "/storefront", label: "Listed products" },
+    { href: "/store", label: "Preview" },
+  ];
+
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
@@ -294,7 +299,7 @@ export function AppSidebar({
               items={analyticsLeaves}
               pathname={pathname}
             />
-            <NavItem href="/store" label="Storefront preview" icon={StoreIcon} active={false} />
+            <NavTree label="Storefront" icon={StoreIcon} active={pathname.startsWith("/storefront")} items={storefrontLeaves} pathname={pathname} />
           </SidebarMenu>
         </SidebarGroup>
 
