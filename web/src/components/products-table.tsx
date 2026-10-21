@@ -11,8 +11,18 @@ import {
   type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
-import { Check, Download, Search } from "lucide-react";
+import { Check, Download, MoreHorizontal, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -133,6 +143,30 @@ const columns: ColumnDef<Product>[] = [
   },
 ];
 
+function actionsColumn(onDelete: (p: Product) => void): ColumnDef<Product> {
+  return {
+    id: "actions",
+    enableSorting: false,
+    meta: { stopRowClick: true, className: "w-12 px-2" },
+    header: () => <span className="sr-only">Actions</span>,
+    cell: ({ row }) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.original.title}`}>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem variant="destructive" onSelect={() => onDelete(row.original)}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
+  };
+}
+
 function searchFilter(row: { original: Product }, _id: string, query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -154,10 +188,12 @@ export function ProductsTable() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
   const [openId, setOpenId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<{ ids: string[]; label: string } | null>(null);
+  const allColumns = useMemo(() => [...columns, actionsColumn((p) => setDeleting({ ids: [p.id], label: `"${p.title}"` }))], []);
 
   const table = useReactTable({
     data: products,
-    columns,
+    columns: allColumns,
     state: { sorting, columnFilters, globalFilter, rowSelection, pagination },
     getRowId: (p) => p.id,
     onSortingChange: setSorting,
@@ -297,8 +333,20 @@ export function ProductsTable() {
           {selectedIds.length ? (
             <div className="ml-auto flex items-center gap-2 text-sm" aria-live="polite">
               <span className="tabular-nums text-muted-foreground">{formatNumber(selectedIds.length)} selected</span>
+              {table.getIsAllPageRowsSelected() && filtered.length > selectedIds.length ? (
+                <Button variant="ghost" onClick={() => setRowSelection(Object.fromEntries(filtered.map((p) => [p.id, true])))}>
+                  Select all {formatNumber(filtered.length)}
+                </Button>
+              ) : null}
               <Button variant="ghost" onClick={() => table.resetRowSelection()}>
                 Clear
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setDeleting({ ids: selectedIds, label: `${formatNumber(selectedIds.length)} product${selectedIds.length === 1 ? "" : "s"}` })}
+              >
+                <Trash2 data-icon="inline-start" />
+                Delete {formatNumber(selectedIds.length)}
               </Button>
               <RerunDialog ids={selectedIds} onDone={() => table.resetRowSelection()} />
               <Button
@@ -327,6 +375,33 @@ export function ProductsTable() {
         />
 
         <ProductSheet product={products.find((p) => p.id === openId)} onClose={() => setOpenId(null)} />
+
+        <AlertDialog open={deleting !== null} onOpenChange={(o) => !o && setDeleting(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {deleting?.label}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Deleted products leave the catalog and the storefront. Future imports skip them instead of building them again.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => {
+                  const target = deleting;
+                  if (!target) return;
+                  const gone = new Set(target.ids);
+                  if (openId && gone.has(openId)) setOpenId(null);
+                  setRowSelection((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => !gone.has(id))));
+                  void actions.deleteProducts(target.ids);
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <Pagination
           page={pagination.pageIndex}

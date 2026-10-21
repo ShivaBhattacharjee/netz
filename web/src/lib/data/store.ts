@@ -240,6 +240,20 @@ export const actions = {
     }
   },
 
+  async deleteProducts(ids: string[]) {
+    const before = state.products;
+    const set = new Set(ids);
+    setState({ products: state.products.filter((p) => !set.has(p.id)) });
+    try {
+      const { deleted } = await api<{ deleted: number }>("/api/products/delete", { method: "POST", json: { ids } });
+      toast.success(`Deleted ${deleted} product${deleted === 1 ? "" : "s"}`);
+      scheduleRefresh(true);
+    } catch (error) {
+      setState({ products: before });
+      fail(error, "Could not delete");
+    }
+  },
+
   async sendBack(id: string, note: string) {
     try {
       await api(`/api/products/${id}/send-back`, { method: "POST", json: { note } });

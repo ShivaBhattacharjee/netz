@@ -174,6 +174,15 @@ export async function approveProducts(storeId: string, ids: string[]) {
   return updated.length;
 }
 
+export async function deleteProducts(storeId: string, ids: string[]) {
+  const deleted = await db
+    .update(product)
+    .set({ deletedAt: new Date() })
+    .where(and(live(storeId), inArray(product.id, ids)))
+    .returning({ id: product.id });
+  return deleted.length;
+}
+
 export async function sendBack(storeId: string, id: string, note: string) {
   await owned(storeId, id);
   await db
