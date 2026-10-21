@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-const DIR = path.resolve(process.env.EVALS_DIR ?? "../evals");
+const DIR = path.resolve(process.env.EVALS_DIR ?? "evals");
 
 export interface LabelVariant {
   sku: string;

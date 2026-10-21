@@ -55,7 +55,7 @@ Storefront routes ──► Postgres read model (published + translated only), c
 
 ## Data model (first cut)
 
-Built (`web/src/db/schema`): `store`, `store_member`, `upload`, `import`, `import_group` (cleaned input, input hash, route, status), `source_row` (raw + normalised + row hash + status), `photo` (content hash, match), `product` (fields, claims, confidence, `manual_fields`, input hash, tombstone), `variant`, `product_photo`, `translation` (locale, field, text, source hash, origin, state), `ai_result` (output cache), `ai_call` (model, prompt version, tokens, cost, latency).
+Built (`src/db/schema`): `store`, `store_member`, `upload`, `import`, `import_group` (cleaned input, input hash, route, status), `source_row` (raw + normalised + row hash + status), `photo` (content hash, match), `product` (fields, claims, confidence, `manual_fields`, input hash, tombstone), `variant`, `product_photo`, `translation` (locale, field, text, source hash, origin, state), `ai_result` (output cache), `ai_call` (model, prompt version, tokens, cost, latency).
 
 ## Build order
 

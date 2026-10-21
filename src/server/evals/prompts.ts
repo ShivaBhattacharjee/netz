@@ -46,7 +46,7 @@ export async function createCustomPrompt(storeId: string, userId: string | null,
 }
 
 export async function deleteCustomPrompt(storeId: string, key: string) {
-  if (!key.startsWith(CUSTOM_PREFIX)) throw new EvalSetError("Built-in prompts live in web/prompts and cannot be deleted here");
+  if (!key.startsWith(CUSTOM_PREFIX)) throw new EvalSetError("Built-in prompts live in prompts/ and cannot be deleted here");
   const deleted = await db
     .delete(customPrompt)
     .where(and(eq(customPrompt.id, key.slice(CUSTOM_PREFIX.length)), eq(customPrompt.storeId, storeId)))
