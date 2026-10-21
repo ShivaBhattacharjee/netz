@@ -103,3 +103,32 @@ export interface ImportRow {
   product_id: string | null;
   reason: string | null;
 }
+
+export interface ImportRowDetail extends ImportRow {
+  cells: Record<string, string>;
+  repairs: string[];
+  group_key: string | null;
+  duplicate_of: number | null;
+  retryable: boolean;
+  product: { id: string; title: string; status: ProductStatus; review_reason: string | null } | null;
+}
+
+export interface QueueStats {
+  queues: { name: string; waiting: number; active: number; delayed: number; completed: number; failed: number; workers: number }[];
+  pause: { until: string; reason: string } | null;
+}
+
+export interface Metrics {
+  by: Record<ProductStatus, number>;
+  total: number;
+  cost_micros: number;
+  baseline_micros: number;
+  strong_model: string;
+  avg_ms: number;
+  p95_ms: number;
+  latency: { bucket: string; count: number }[];
+  models: { model: string; calls: number; products: number; cost_micros: number }[];
+  coverage: { language: string; current: number; outOfDate: number; missing: number; total: number }[];
+  funnel: { label: string; value: number }[];
+  daily: { day: string; done: number; review: number; failed: number; cost_micros: number; saved_micros: number }[];
+}

@@ -11,10 +11,10 @@ import { newId, sha256 } from "../ids";
 import { log } from "../log";
 import type { GroupInput } from "../pipeline/group";
 import { slugify } from "../pipeline/text";
-import { type BuildJob, enqueueTranslate } from "../queues";
+import { type BuildJob, type RerunJob, enqueueTranslate } from "../queues";
 import { currentPause, pauseAi, pauseFor, recordProviderFailure, recordProviderSuccess } from "./gate";
 import { recordCalls } from "./calls";
-import { refreshCounts } from "./progress";
+import { publish, refreshCounts } from "./progress";
 import { englishSourceHash } from "./translate";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -187,3 +187,77 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
   return { productId: saved.id, status: saved.status, model, cached: !!cached };
 }
 
+
+const RERUN_FIELDS: Record<string, (b: BuiltProduct) => Partial<typeof product.$inferInsert>> = {
+  title: (b) => ({ title: b.title }),
+  description_html: (b) => ({ descriptionHtml: b.descriptionHtml }),
+  category: (b) => ({ category: b.category }),
+  attributes: (b) => ({ attributes: b.attributes, tags: b.tags }),
+  claims: (b) => ({ claims: b.claims }),
+  seo: (b) => ({ seo: b.seo }),
+};
+
+export async function runRerun(job: Job<RerunJob>, worker: Worker) {
+  const { productId, model, fields, note } = job.data;
+  const [current] = await db.select().from(product).where(eq(product.id, productId));
+  if (!current || current.deletedAt) return { skipped: true };
+  const [group] = await db.select().from(importGroup).where(eq(importGroup.productId, productId)).orderBy(sql`${importGroup.createdAt} desc`).limit(1);
+  if (!group) return { skipped: true, reason: "No source rows for this product" };
+
+  const config = env();
+  const pause = await currentPause();
+  if (pause) await rateLimited(worker, pause.until - Date.now(), pause.reason);
+
+  const input = group.input as GroupInput;
+  let output: BuildOutput;
+  let calls: AiCallRecord[] = [];
+  if (config.AI_MODE === "mock") {
+    output = mockBuild(input, "Re-run in demo mode without AI");
+  } else {
+    try {
+      const result = await generateBuild(input, model, { withPhotos: input.photos.length > 0, maxOutputTokens: Math.min(16_384, 4096 * 2 ** job.attemptsMade), note });
+      output = result.output;
+      calls = result.calls;
+    } catch (raw) {
+      calls = (raw as { calls?: AiCallRecord[] }).calls ?? [];
+      const error = classify(raw);
+      await recordCalls(db, calls, { storeId: current.storeId, importId: current.lastImportId, productId });
+      const pauseInfo = pauseFor(error);
+      if (pauseInfo) await rateLimited(worker, pauseInfo.ms, pauseInfo.reason);
+      if (!error.retryable || isFinalAttempt(job)) {
+        await db.update(product).set({ status: "needs_review", reviewReason: `Re-run failed: ${error.message}` }).where(eq(product.id, productId));
+        await refreshProductEvent(current.storeId, productId);
+        return { failed: error.message };
+      }
+      throw error;
+    }
+  }
+
+  const built = finalizeBuild(input, output);
+  const manual = new Set(current.manualFields);
+  const changes: Partial<typeof product.$inferInsert> = { confidence: { ...current.confidence, ...built.confidence } };
+  for (const field of fields) {
+    if (manual.has(field) || !RERUN_FIELDS[field]) continue;
+    Object.assign(changes, RERUN_FIELDS[field](built));
+  }
+  const status = built.reviewReasons.length > 0 ? ("needs_review" as const) : ("ready" as const);
+
+  const saved = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(product)
+      .set({ ...changes, status, reviewReason: built.reviewReasons.join("; ") || null })
+      .where(eq(product.id, productId))
+      .returning();
+    await recordCalls(tx, calls, { storeId: current.storeId, importId: current.lastImportId, productId });
+    return row;
+  });
+
+  await recordProviderSuccess(current.lastImportId);
+  for (const locale of ["de", "fr"] as const) await enqueueTranslate(saved.id, locale, englishSourceHash(saved));
+  await refreshProductEvent(current.storeId, productId);
+  return { productId, status, model };
+}
+
+async function refreshProductEvent(storeId: string, productId: string) {
+  await publish({ type: "product.updated", storeId, productId });
+}

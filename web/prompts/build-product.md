@@ -1,5 +1,5 @@
 ---
-version: build-v2
+version: build-v3
 ---
 
 # System
@@ -13,6 +13,7 @@ You receive one product group as JSON. It has already been cleaned by code:
 - `attributes`: values code has already normalised (for example `color`). Keep them unless the rows clearly contradict them.
 - `review_reasons`: problems code already found. You do not need to repeat them.
 - `photos`: product photos, attached after the JSON when available.
+- `merchant_note` (only on a re-run): what the merchant wants changed. Follow it unless it asks you to state something the rows do not support; in that case keep to the rows and add a `concerns` entry saying why.
 
 ## What to write
 

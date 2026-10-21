@@ -55,9 +55,10 @@ export interface BuiltProduct {
   reviewReasons: string[];
 }
 
-function promptInput(group: GroupInput) {
+function promptInput(group: GroupInput, note?: string) {
   return JSON.stringify(
     {
+      ...(note ? { merchant_note: note } : {}),
       group_key: group.group_key,
       rows: group.rows,
       variants: group.variants.map(({ sku, options }) => ({ sku, options })),
@@ -98,13 +99,13 @@ function parseOutput(text: string) {
   return { ok: true as const, value: parsed.data };
 }
 
-export async function generateBuild(group: GroupInput, model: string, opts: { withPhotos: boolean; maxOutputTokens: number }) {
+export async function generateBuild(group: GroupInput, model: string, opts: { withPhotos: boolean; maxOutputTokens: number; note?: string }) {
   const prompt = loadPrompt("build-product");
   const calls: AiCallRecord[] = [];
   const record = (task: AiCallRecord["task"], version: string, usage: Usage, latencyMs: number, ok: boolean, errorCode: string | null) =>
     calls.push({ model, promptVersion: version, task, usage, latencyMs, ok, errorCode });
 
-  const parts: Part[] = [{ text: render(prompt.user, { input: promptInput(group) }) }];
+  const parts: Part[] = [{ text: render(prompt.user, { input: promptInput(group, opts.note) }) }];
   if (opts.withPhotos) parts.push(...(await photoParts(group)));
   const system = render(prompt.system, { taxonomy: TAXONOMY.map((c) => `- ${c}`).join("\n") });
 

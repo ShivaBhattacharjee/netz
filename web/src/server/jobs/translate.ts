@@ -10,6 +10,7 @@ import { log } from "../log";
 import type { TranslateJob } from "../queues";
 import { recordCalls } from "./calls";
 import { currentPause, pauseAi, pauseFor } from "./gate";
+import { publish } from "./progress";
 
 type ProductRow = typeof product.$inferSelect;
 
@@ -103,6 +104,7 @@ export async function runTranslate(job: Job<TranslateJob>, worker: Worker) {
     });
   });
 
+  await publish({ type: "product.updated", storeId: p.storeId, productId });
   const failed = Object.keys(result.failed);
   if (failed.length > 0) {
     log.warn("translation rejected by validator", { productId, locale, failed: result.failed });

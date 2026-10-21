@@ -55,8 +55,9 @@ export async function recordProviderFailure(): Promise<{ ms: number; reason: str
   return n >= BREAKER_THRESHOLD ? { ms: BREAKER_PAUSE_MS, reason: "AI provider is failing, pausing before retrying" } : null;
 }
 
-export async function recordProviderSuccess(importId: string) {
+export async function recordProviderSuccess(importId: string | null) {
   await redis().del(FAILURE_KEY);
+  if (!importId) return;
   await db
     .update(importJob)
     .set({ status: "processing", pausedUntil: null })

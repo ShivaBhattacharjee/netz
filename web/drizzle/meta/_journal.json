@@ -22,6 +22,13 @@
       "when": 1792543594913,
       "tag": "0002_acoustic_dust",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792545332703,
+      "tag": "0003_unusual_moonstone",
+      "breakpoints": true
     }
   ]
 }

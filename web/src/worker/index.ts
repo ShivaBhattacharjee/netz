@@ -2,7 +2,7 @@ import "./env";
 import { type Job, type Processor, Worker } from "bullmq";
 import { db } from "@/db";
 import { env } from "@/server/env";
-import { runBuild } from "@/server/jobs/build";
+import { runBuild, runRerun } from "@/server/jobs/build";
 import { runParse } from "@/server/jobs/parse";
 import { reconcile } from "@/server/jobs/reconcile";
 import { runTranslate } from "@/server/jobs/translate";
@@ -21,8 +21,8 @@ const CONCURRENCY: Record<QueueName, number> = {
 
 const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>> = {
   [QUEUE.parse]: (job) => runParse(job),
-  [QUEUE.aiCheap]: runBuild,
-  [QUEUE.aiStrong]: runBuild,
+  [QUEUE.aiCheap]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
+  [QUEUE.aiStrong]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
   [QUEUE.translate]: runTranslate,
 };
 

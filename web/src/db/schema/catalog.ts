@@ -139,9 +139,7 @@ export const photo = pgTable(
   "photo",
   {
     id: text("id").primaryKey(),
-    importId: text("import_id")
-      .notNull()
-      .references(() => importJob.id, { onDelete: "cascade" }),
+    importId: text("import_id").references(() => importJob.id, { onDelete: "set null" }),
     storeId: storeRef(),
     fileName: text("file_name").notNull(),
     sha256: text("sha256"),
