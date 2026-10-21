@@ -21,7 +21,7 @@ const SYNONYMS: Record<Field, string[]> = {
   parent_sku: ["parent sku", "parent", "group sku", "model number", "model", "modell", "style"],
   title: ["title", "name", "product name", "bezeichnung", "produktname", "artikelbezeichnung", "nom", "désignation", "libellé", "product"],
   description: ["description", "beschreibung", "desc", "details", "produktbeschreibung", "long description", "body html", "body"],
-  price: ["price", "preis", "prix", "vk", "vk preis", "rrp", "uvp", "retail price", "unit price", "verkaufspreis"],
+  price: ["price", "preis", "prix", "vk", "vk preis", "vk brutto", "rrp", "uvp", "retail price", "unit price", "selling price", "sales price", "verkaufspreis", "endpreis", "prix de vente", "prix ttc", "tarif"],
   currency: ["currency", "währung", "wahrung", "waehrung", "devise"],
   size: ["size", "größe", "grosse", "groesse", "taille", "dimensions", "dimension", "maße", "masse", "format", "volume", "inhalt"],
   color: ["color", "colour", "farbe", "couleur"],
@@ -75,5 +75,24 @@ export function detectHeader(rows: string[][], scan = 20): HeaderInfo | null {
     taken.add(field);
     return field;
   });
+  if (!taken.has("price")) {
+    const column = inferPriceColumn(rows.slice(best.index + 1, best.index + 201), raw, fields);
+    if (column !== null) fields[column] = "price";
+  }
   return { index: best.index, names, fields };
+}
+
+const PURCHASE = /\b(ek|einkauf\w*|cost|costs|purchase|wholesale|achat|prix d achat)\b/;
+const MONEY = /([€£$]|\b(eur|gbp|usd|chf)\b)\s*\d|\d\s*([€£$]|\b(eur|gbp|usd|chf)\b)/i;
+
+function inferPriceColumn(sample: string[][], header: string[], fields: (Field | null)[]): number | null {
+  let best: { column: number; share: number } | null = null;
+  for (let c = 0; c < header.length; c++) {
+    if (fields[c] || PURCHASE.test(normalizeForMatch(header[c]))) continue;
+    const values = sample.map((r) => (r[c] ?? "").trim()).filter(Boolean);
+    if (values.length < 3) continue;
+    const share = values.filter((v) => MONEY.test(v)).length / values.length;
+    if (share >= 0.8 && (!best || share > best.share)) best = { column: c, share };
+  }
+  return best?.column ?? null;
 }

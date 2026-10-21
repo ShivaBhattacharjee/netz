@@ -1,5 +1,6 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { detectHeader } from "./headers";
 import { decodeText } from "./text";
 
 export class SheetError extends Error {}
@@ -8,6 +9,7 @@ export interface ParsedSheet {
   rows: string[][];
   encoding: string;
   delimiter?: string;
+  sheetName?: string;
 }
 
 export function parseSheet(buffer: Buffer, kind: "csv" | "xlsx"): ParsedSheet {
@@ -31,8 +33,14 @@ function parseXlsx(buffer: Buffer): ParsedSheet {
   } catch (error) {
     throw new SheetError(`Could not read the file: ${(error as Error).message}`);
   }
-  const first = workbook.SheetNames[0];
-  if (!first) throw new SheetError("Could not read the file: the workbook has no sheets");
-  const rows = XLSX.utils.sheet_to_json<string[]>(workbook.Sheets[first], { header: 1, raw: false, defval: "", blankrows: true });
-  return { rows: rows.map((r) => r.map((c) => String(c ?? ""))), encoding: "xlsx" };
+  if (workbook.SheetNames.length === 0) throw new SheetError("Could not read the file: the workbook has no sheets");
+  let best: { rows: string[][]; name: string; score: number } | null = null;
+  for (const name of workbook.SheetNames) {
+    const rows = XLSX.utils
+      .sheet_to_json<string[]>(workbook.Sheets[name], { header: 1, raw: false, defval: "", blankrows: true })
+      .map((r) => r.map((c) => String(c ?? "")));
+    const score = detectHeader(rows)?.fields.filter(Boolean).length ?? 0;
+    if (!best || score > best.score) best = { rows, name, score };
+  }
+  return { rows: best!.rows, encoding: "xlsx", sheetName: best!.name };
 }
