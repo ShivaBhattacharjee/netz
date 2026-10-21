@@ -6,22 +6,31 @@ import type { Country } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 import { CountrySwitcher } from "./country-switcher";
 
-export function StoreChrome({ country, storeName, children }: { country: Country; storeName: string; children: ReactNode }) {
+export function StoreChrome({
+  country,
+  storeName,
+  homeHref,
+  preview,
+  children,
+}: {
+  country: Country;
+  storeName: string;
+  homeHref: string;
+  preview: boolean;
+  children: ReactNode;
+}) {
   return (
     <div lang={country.locale} className="min-h-svh">
-      <div className="border-b bg-muted/40">
-        <div className="mx-auto flex min-h-16 max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-full bg-foreground text-background">
-              <Boxes className="size-4" />
+      {preview ? (
+        <div className="border-b bg-muted/40">
+          <div className="mx-auto flex min-h-12 max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-2 md:px-8">
+            <span className="flex items-center gap-3 text-sm">
+              <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-background">
+                <Boxes className="size-3.5" />
+              </span>
+              Previewing your public storefront
             </span>
-            <span className="text-sm">
-              Previewing the storefront <span className="hidden text-muted-foreground sm:inline">as a shopper sees it</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CountrySwitcher value={country.code} />
-            <Button asChild>
+            <Button asChild size="sm">
               <Link href="/products">
                 <ArrowLeft data-icon="inline-start" />
                 Back to dashboard
@@ -29,12 +38,13 @@ export function StoreChrome({ country, storeName, children }: { country: Country
             </Button>
           </div>
         </div>
-      </div>
+      ) : null}
       <header className="border-b">
-        <div className="mx-auto flex h-16 max-w-[1200px] items-center px-4 md:px-8">
-          <Link href={`/store?country=${country.code}`} className="text-lg font-semibold tracking-tight">
+        <div className="mx-auto flex min-h-16 max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-2 md:px-8">
+          <Link href={homeHref} className="text-lg font-semibold tracking-tight">
             {storeName}
           </Link>
+          <CountrySwitcher value={country.code} />
         </div>
       </header>
       <main id="main" className="mx-auto max-w-[1200px] px-4 py-10 md:px-8 md:py-14">
@@ -52,6 +62,6 @@ export function PhotoTile({ src, className }: { src?: string; className?: string
       </div>
     );
   }
-  // eslint-disable-next-line @next/next/no-img-element -- private, store-scoped photo route
+  // eslint-disable-next-line @next/next/no-img-element -- photos come from the store-scoped shop photo route
   return <img src={src} alt="" loading="lazy" className={cn("aspect-[4/5] w-full rounded-lg bg-muted object-cover", className)} />;
 }

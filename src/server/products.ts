@@ -303,6 +303,18 @@ export async function latestGroupFor(productId: string) {
   return group ?? null;
 }
 
+/** A photo shoppers may see: attached to a listed, non-deleted product of the store. */
+export async function publishedPhotoFile(storeId: string, id: string) {
+  const [row] = await db
+    .select({ storageKey: photo.storageKey })
+    .from(photo)
+    .innerJoin(productPhoto, eq(productPhoto.photoId, photo.id))
+    .innerJoin(product, eq(product.id, productPhoto.productId))
+    .where(and(eq(photo.id, id), eq(photo.storeId, storeId), live(storeId), eq(product.status, "approved")))
+    .limit(1);
+  return row?.storageKey ? { storageKey: row.storageKey } : null;
+}
+
 export async function photoFile(storeId: string, id: string) {
   const [row] = await db
     .select({ storageKey: photo.storageKey, fileName: photo.fileName })

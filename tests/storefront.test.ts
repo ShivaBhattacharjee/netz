@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { toCsv, toShopifyCsv } from "@/lib/export";
 import { formatMoney } from "@/lib/format";
 import { countryFor, localized, localizedAttribute } from "@/lib/locale";
+import { shopHref } from "@/server/storefront";
 import { product } from "./helpers";
 
 describe("storefront language and prices", () => {
@@ -36,6 +37,14 @@ describe("storefront language and prices", () => {
     expect(localized(p, "de", "description_html")).toBe("<p>Topf</p>");
     expect(localizedAttribute(p, "de", "care")).toBe("Unter 0 °C ins Haus holen");
     expect(localizedAttribute(p, "de", "color")).toBe("natural");
+  });
+});
+
+describe("public storefront links (3.7)", () => {
+  it("keeps the country, drops page 1 and marks merchant previews", () => {
+    expect(shopHref("acme shop", "/terracotta-pot", { country: "DE" })).toBe("/shop/acme%20shop/terracotta-pot?country=DE");
+    expect(shopHref("acme", "", { country: "FR", page: 1, preview: true })).toBe("/shop/acme?country=FR&preview=1");
+    expect(shopHref("acme", "", { country: "US", page: 3 })).toBe("/shop/acme?country=US&page=3");
   });
 });
 

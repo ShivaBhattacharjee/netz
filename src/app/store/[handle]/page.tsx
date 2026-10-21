@@ -1,60 +1,9 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { requireStore } from "@/lib/auth/session";
-import { countryFor, localized, localizedAttribute, storeStrings } from "@/lib/locale";
-import { cachedPublishedByHandle } from "@/server/storefront";
-import { PhotoTile, StoreChrome } from "@/components/store-chrome";
-import { VariantPicker } from "@/components/variant-picker";
+import { countryFor } from "@/lib/locale";
+import { shopHref } from "@/server/storefront";
 
-export default async function StoreProductPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ handle: string }>;
-  searchParams: Promise<{ country?: string }>;
-}) {
-  const { handle } = await params;
-  const country = countryFor((await searchParams).country);
-  const { active } = await requireStore();
-  const product = await cachedPublishedByHandle(active.id, handle);
-  if (!product) notFound();
-
-  const t = storeStrings[country.locale];
-  const photos = product.photos.length ? product.photos : [undefined];
-
-  return (
-    <StoreChrome country={country} storeName={active.name}>
-      <div className="flex flex-col gap-6">
-        <Link href={`/store?country=${country.code}`} className="text-compact text-muted-foreground hover:text-foreground">
-          {t.back}
-        </Link>
-        <div className="grid gap-8 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:gap-12">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {photos.map((p, i) => (
-              <PhotoTile key={p ?? i} src={p} className={i === 0 ? "sm:col-span-2" : ""} />
-            ))}
-          </div>
-          <div className="flex flex-col gap-8">
-            <h1 className="text-2xl font-semibold tracking-tight">{localized(product, country.locale, "title")}</h1>
-            <VariantPicker variants={product.variants} locale={country.locale} strings={t} />
-            <div
-              className="flex flex-col gap-3 text-body [&_li]:ml-5 [&_ul]:list-disc"
-              dangerouslySetInnerHTML={{ __html: localized(product, country.locale, "description_html") }}
-            />
-            <dl className="flex flex-col divide-y divide-y border-y text-compact">
-              {(["material", "color", "care"] as const).map((key) => {
-                const value = localizedAttribute(product, country.locale, key);
-                return value ? (
-                  <div key={key} className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
-                    <dt className="text-muted-foreground">{t[key]}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ) : null;
-              })}
-            </dl>
-          </div>
-        </div>
-      </div>
-    </StoreChrome>
-  );
+export default async function StoreProductPreview({ params, searchParams }: { params: Promise<{ handle: string }>; searchParams: Promise<{ country?: string }> }) {
+  const [{ active }, { handle }, query] = await Promise.all([requireStore(), params, searchParams]);
+  redirect(shopHref(active.slug, `/${encodeURIComponent(handle)}`, { country: countryFor(query.country).code, preview: true }));
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Plus, Search, X } from "lucide-react";
+import { ExternalLink, Eye, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -98,7 +98,7 @@ function AddProductsSheet({ open, onOpenChange, candidates }: { open: boolean; o
   );
 }
 
-export function StorefrontView() {
+export function StorefrontView({ shopUrl }: { shopUrl: string }) {
   const products = useProducts();
   const ready = useProductsReady();
   const [adding, setAdding] = useState(false);
@@ -118,10 +118,16 @@ export function StorefrontView() {
       actions={
         <>
           <Button variant="outline" asChild>
-            <Link href="/store">
+            <Link href={`${shopUrl}?preview=1`}>
               <Eye data-icon="inline-start" />
               Preview
             </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <a href={shopUrl} target="_blank" rel="noreferrer">
+              <ExternalLink data-icon="inline-start" />
+              Public link
+            </a>
           </Button>
           <Button onClick={() => setAdding(true)} disabled={!ready}>
             <Plus data-icon="inline-start" />

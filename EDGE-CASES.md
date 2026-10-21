@@ -80,7 +80,7 @@ Auth, stores, the import pipeline (upload → parse → clean → group → phot
 | 3.4 | Server restarts mid-import | Every row and group state is in Postgres. Jobs are keyed by `(import, group, stage)`, so re-adding them is a no-op. On start (and every 5 minutes) a reconciler re-enqueues pending groups; jobs held by a dead worker are recovered by BullMQ stall detection within ~30 s. When BullMQ gives up on a job (retries used up, or stalled twice), the worker marks that group's rows **Failed** with "Gave up after N attempt(s): …", so no row stays pending and Retry can pick it up. | Handled, not tested |
 | 3.5 | Worker crashes after the AI call but before saving | The AI result is stored with the job key before the product write; the retry reuses it instead of paying again. | Handled, not tested |
 | 3.6 | Row counts do not add up | Invariant: done + needs review + failed + pending = total rows. Checked at import completion; a mismatch is logged and shown. | Handled, not tested |
-| 3.7 | Storefront under load during a big import | Storefront reads only published, pre-translated data, 24 products per page, without the AI cost aggregates the dashboard uses, served from the Next.js data cache per store and page (60 s TTL, invalidated when a product is approved, unlisted, deleted, edited or sent back). Workers run in separate processes with a capped DB pool. On the single Render service the worker shares the machine's CPU with the web server; split it into its own service for real isolation. The storefront is a merchant preview and needs a signed-in session. | Handled, not tested |
+| 3.7 | Storefront under load during a big import | Storefront reads only published, pre-translated data, 24 products per page, without the AI cost aggregates the dashboard uses, served from the Next.js data cache per store and page (60 s TTL, invalidated when a product is approved, unlisted, deleted, edited or sent back). Workers run in separate processes with a capped DB pool. On the single Render service the worker shares the machine's CPU with the web server; split it into its own service for real isolation. The storefront is public at `/shop/<store>` with no sign-in; `/store` and the dashboard Preview button open it with a merchant banner (`?preview=1`). | Handled, not tested |
 | 3.8 | Browser tab closed during upload | Resumable/chunked upload is not built; the merchant re-uploads. Because of 3.2 that is safe. | Not handled (re-upload is idempotent) |
 
 ## 4. Later changes
@@ -100,7 +100,7 @@ Auth, stores, the import pipeline (upload → parse → clean → group → phot
 
 | # | What happens | What the app does | Status |
 | --- | --- | --- | --- |
-| 5.1 | Product still under review | Only approved ("listed") products are shown. Direct URL returns 404. | Handled, not tested |
+| 5.1 | Product still under review | Only approved ("listed") products are shown. Direct URL returns 404, and its photos return 404 from the public photo route (`/api/shop/<store>/photos/<id>`), which serves only photos of listed products. | Handled, not tested |
 | 5.2 | Translation missing for a field | Falls back to English for that field only (title, description and each attribute separately). | Handled + tested |
 | 5.3 | Visitor from a country with no translation (e.g. Spain) | English. | Handled + tested |
 | 5.4 | Austria / Germany | German. France → French. | Handled + tested |

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { countries, countryFor } from "@/lib/locale";
 
@@ -9,10 +9,17 @@ const languageName = { en: "English", de: "German", fr: "French" };
 export function CountrySwitcher({ value }: { value: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const current = countryFor(value);
+  const select = (code: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("country", code);
+    params.delete("page");
+    router.push(`${pathname}?${params}`);
+  };
   return (
-    <Select value={value} onValueChange={(v) => router.push(`${pathname}?country=${v}`)}>
-      <SelectTrigger className="h-9 gap-2 border-input bg-background/60 pl-3" aria-label="Preview as visitor from">
+    <Select value={value} onValueChange={select}>
+      <SelectTrigger className="h-9 gap-2 border-input bg-background/60 pl-3" aria-label="Country and language">
         <span className="text-muted-foreground">Viewing as</span>
         <SelectValue>
           <span className="font-medium">{current.name}</span>
