@@ -102,7 +102,7 @@ export async function runEval(job: Job<EvalJob>) {
     );
 
     latencies.sort((a, b) => a - b);
-    const cost = calls.reduce((a, c) => a + costMicros(c.model, c.usage.inputTokens, c.usage.outputTokens), 0);
+    const cost = calls.reduce((a, c) => a + costMicros(c.model, c.usage), 0);
     await recordCalls(db, calls, { storeId: run.storeId, importId: null });
     await db
       .update(evalRun)

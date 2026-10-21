@@ -14,7 +14,7 @@ import { comparePhotoNames } from "../pipeline/photos";
 import { slugify } from "../pipeline/text";
 import { type BuildJob, type RerunJob, enqueueTranslate } from "../queues";
 import { overBudget } from "./budget";
-import { currentPause, pauseAi, pauseFor, recordProviderFailure, recordProviderSuccess } from "./gate";
+import { pauseOnAiError, recordProviderSuccess, waitIfPaused } from "./gate";
 import { recordCalls } from "./calls";
 import { publish, refreshCounts } from "./progress";
 import { englishSourceHash } from "./translate";
@@ -23,12 +23,6 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 function isFinalAttempt(job: Job) {
   return job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
-}
-
-async function rateLimited(worker: Worker, ms: number, reason: string): Promise<never> {
-  await pauseAi(ms, reason);
-  await worker.rateLimit(ms);
-  throw Worker.RateLimitError();
 }
 
 async function uniqueHandle(tx: Tx, storeId: string, title: string, productId: string | null) {
@@ -149,8 +143,7 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
   if (!imp || imp.status === "cancelled" || imp.status === "failed") return { skipped: true };
 
   const config = env();
-  const pause = await currentPause();
-  if (pause) await rateLimited(worker, pause.until - Date.now(), pause.reason);
+  await waitIfPaused(worker);
 
   const input = group.input as GroupInput;
   const model = config.AI_MODE === "mock" ? "mock" : group.route === "strong" ? config.AI_MODEL_STRONG : config.AI_MODEL_FAST;
@@ -177,18 +170,8 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
     } catch (raw) {
       calls = (raw as { calls?: AiCallRecord[] }).calls ?? [];
       const error = classify(raw);
-      const pauseInfo = pauseFor(error);
-      if (pauseInfo) {
-        await recordCalls(db, calls, { storeId: group.storeId, importId, groupId });
-        await rateLimited(worker, pauseInfo.ms, pauseInfo.reason);
-      }
-      if (error.kind === "unavailable" || error.kind === "timeout") {
-        const breaker = await recordProviderFailure();
-        if (breaker) {
-          await recordCalls(db, calls, { storeId: group.storeId, importId, groupId });
-          await rateLimited(worker, breaker.ms, breaker.reason);
-        }
-      }
+      const record = () => recordCalls(db, calls, { storeId: group.storeId, importId, groupId });
+      await pauseOnAiError(worker, error, record);
       if (error.kind === "blocked") {
         output = mockBuild(input, error.message);
       } else if (!error.retryable || isFinalAttempt(job)) {
@@ -196,7 +179,7 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
         await refreshCounts(importId);
         return { failed: error.message };
       } else {
-        await recordCalls(db, calls, { storeId: group.storeId, importId, groupId });
+        await record();
         throw error;
       }
     }
@@ -206,7 +189,7 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
   const saved = await persist(group, input, built, calls);
   await recordProviderSuccess(importId);
 
-  for (const locale of ["de", "fr"] as const) await enqueueTranslate(saved.id, locale, englishSourceHash(saved));
+  await enqueueTranslate(saved.id, englishSourceHash(saved));
   await refreshCounts(importId);
   return { productId: saved.id, status: saved.status, model, cached: !!cached };
 }
@@ -229,8 +212,7 @@ export async function runRerun(job: Job<RerunJob>, worker: Worker) {
   if (!group) return { skipped: true, reason: "No source rows for this product" };
 
   const config = env();
-  const pause = await currentPause();
-  if (pause) await rateLimited(worker, pause.until - Date.now(), pause.reason);
+  await waitIfPaused(worker);
 
   const input = group.input as GroupInput;
   let output: BuildOutput;
@@ -246,8 +228,7 @@ export async function runRerun(job: Job<RerunJob>, worker: Worker) {
       calls = (raw as { calls?: AiCallRecord[] }).calls ?? [];
       const error = classify(raw);
       await recordCalls(db, calls, { storeId: current.storeId, importId: current.lastImportId, productId });
-      const pauseInfo = pauseFor(error);
-      if (pauseInfo) await rateLimited(worker, pauseInfo.ms, pauseInfo.reason);
+      await pauseOnAiError(worker, error);
       if (!error.retryable || isFinalAttempt(job)) {
         await db.update(product).set({ status: "needs_review", reviewReason: `Re-run failed: ${error.message}` }).where(eq(product.id, productId));
         await refreshProductEvent(current.storeId, productId);
@@ -277,7 +258,7 @@ export async function runRerun(job: Job<RerunJob>, worker: Worker) {
   });
 
   await recordProviderSuccess(current.lastImportId);
-  for (const locale of ["de", "fr"] as const) await enqueueTranslate(saved.id, locale, englishSourceHash(saved));
+  await enqueueTranslate(saved.id, englishSourceHash(saved));
   await refreshProductEvent(current.storeId, productId);
   return { productId, status, model };
 }

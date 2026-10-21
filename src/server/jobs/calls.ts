@@ -24,7 +24,7 @@ export async function recordCalls(
     promptVersion: c.promptVersion,
     inputTokens: c.usage.inputTokens,
     outputTokens: c.usage.outputTokens,
-    costMicros: costMicros(c.model, c.usage.inputTokens, c.usage.outputTokens),
+    costMicros: costMicros(c.model, c.usage),
     latencyMs: c.latencyMs,
     ok: c.ok,
     errorCode: c.errorCode,

@@ -1,3 +1,4 @@
+import { Worker } from "bullmq";
 import { and, eq, isNotNull, or } from "drizzle-orm";
 import { db } from "@/db";
 import { importJob } from "@/db/schema";
@@ -54,6 +55,30 @@ export async function recordProviderFailure(): Promise<{ ms: number; reason: str
   const n = await redis().incr(FAILURE_KEY);
   if (n === 1) await redis().pexpire(FAILURE_KEY, 60_000);
   return n >= BREAKER_THRESHOLD ? { ms: BREAKER_PAUSE_MS, reason: "AI provider is failing, pausing before retrying" } : null;
+}
+
+async function rateLimit(worker: Worker, ms: number, reason: string): Promise<never> {
+  await pauseAi(ms, reason);
+  await worker.rateLimit(ms);
+  throw Worker.RateLimitError();
+}
+
+/** Puts the job back without using an attempt while the AI queues are paused. */
+export async function waitIfPaused(worker: Worker) {
+  const pause = await currentPause();
+  if (pause) await rateLimit(worker, pause.until - Date.now(), pause.reason);
+}
+
+/**
+ * Pauses the AI queues when an error calls for it (rate limit, bad key, billing, or a provider outage
+ * tripping the breaker) and puts the job back without using an attempt. Returns when the job should
+ * retry or fail as usual. `beforePause` runs first, so spend on the failed call is still recorded.
+ */
+export async function pauseOnAiError(worker: Worker, error: AiError, beforePause?: () => Promise<unknown>) {
+  const pause = pauseFor(error) ?? (error.kind === "unavailable" || error.kind === "timeout" ? await recordProviderFailure() : null);
+  if (!pause) return;
+  await beforePause?.();
+  await rateLimit(worker, pause.ms, pause.reason);
 }
 
 export async function recordProviderSuccess(importId: string | null) {

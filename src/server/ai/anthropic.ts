@@ -31,8 +31,11 @@ export class AiError extends Error {
 }
 
 export interface Usage {
+  /** All input tokens, including the cached ones counted below. */
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
 }
 
 export interface GenerateRequest {
@@ -112,7 +115,7 @@ export async function generateJson(req: GenerateRequest): Promise<GenerateResult
     response = await anthropic().messages.create(
       {
         model: req.model,
-        system: req.system,
+        system: [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: req.content }],
         max_tokens: req.maxOutputTokens ?? 4096,
         output_config: { effort: req.effort ?? "low", format: { type: "json_schema", schema: req.jsonSchema } },
@@ -124,9 +127,13 @@ export async function generateJson(req: GenerateRequest): Promise<GenerateResult
   }
 
   const latencyMs = Date.now() - started;
+  const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
+  const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
   const usage: Usage = {
-    inputTokens: response.usage.input_tokens + (response.usage.cache_creation_input_tokens ?? 0) + (response.usage.cache_read_input_tokens ?? 0),
+    inputTokens: response.usage.input_tokens + cacheWriteTokens + cacheReadTokens,
     outputTokens: response.usage.output_tokens,
+    cacheReadTokens,
+    cacheWriteTokens,
   };
 
   switch (response.stop_reason) {

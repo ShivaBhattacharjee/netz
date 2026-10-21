@@ -27,8 +27,8 @@ export function estimateMicros(groups: { input: GroupInput; route: "cheap" | "st
     const model = g.route === "strong" ? config.AI_MODEL_STRONG : config.AI_MODEL_FAST;
     const photos = g.route === "strong" ? Math.min(PHOTOS_PER_CALL, g.input.photos.length) : 0;
     const input = Math.ceil(systemTokens + JSON.stringify(g.input).length / CHARS_PER_TOKEN + photos * TOKENS_PER_PHOTO);
-    total += costMicros(model, input, BUILD_OUTPUT_TOKENS);
-    total += 2 * costMicros(config.AI_MODEL_TRANSLATE, TRANSLATE_INPUT_TOKENS, TRANSLATE_OUTPUT_TOKENS);
+    total += costMicros(model, { inputTokens: input, outputTokens: BUILD_OUTPUT_TOKENS });
+    total += costMicros(config.AI_MODEL_TRANSLATE, { inputTokens: TRANSLATE_INPUT_TOKENS, outputTokens: 2 * TRANSLATE_OUTPUT_TOKENS });
   }
   return Math.round(total);
 }

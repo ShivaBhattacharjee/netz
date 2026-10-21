@@ -30,7 +30,8 @@ export interface RerunJob {
 
 export interface TranslateJob {
   productId: string;
-  locale: "de" | "fr";
+  /** Set on jobs queued before translations covered both languages in one call. */
+  locale?: "de" | "fr";
 }
 
 export const BACKOFF_STRATEGY = "jittered";
@@ -62,7 +63,7 @@ export function queue(name: QueueName) {
 export const jobId = {
   parse: (importId: string, attempt?: string) => `${importId}__parse${attempt ? `__${attempt}` : ""}`,
   build: (importId: string, groupId: string, attempt?: string) => `${importId}__${groupId}__build${attempt ? `__${attempt}` : ""}`,
-  translate: (productId: string, locale: string, sourceHash: string) => `${productId}__${locale}__${sourceHash.slice(0, 16)}`,
+  translate: (productId: string, sourceHash: string) => `${productId}__translate__${sourceHash.slice(0, 16)}`,
 };
 
 export function enqueueParse(importId: string, attempt?: string) {
@@ -87,8 +88,8 @@ export function enqueueRerun(jobs: RerunJob[], strong: boolean) {
   );
 }
 
-export function enqueueTranslate(productId: string, locale: TranslateJob["locale"], sourceHash: string) {
-  return queue(QUEUE.translate).add("translate", { productId, locale } satisfies TranslateJob, {
-    jobId: jobId.translate(productId, locale, sourceHash),
+export function enqueueTranslate(productId: string, sourceHash: string) {
+  return queue(QUEUE.translate).add("translate", { productId } satisfies TranslateJob, {
+    jobId: jobId.translate(productId, sourceHash),
   });
 }

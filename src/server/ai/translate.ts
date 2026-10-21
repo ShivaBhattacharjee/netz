@@ -72,49 +72,67 @@ export function unmask(text: string, tokens: MaskToken[], locale: TranslateLocal
   });
 }
 
-export interface TranslateResult {
+export interface LocaleResult {
   fields: Record<string, string>;
   failed: Record<string, string>;
+}
+
+export interface TranslateResult {
+  byLocale: Partial<Record<TranslateLocale, LocaleResult>>;
   promptVersion: string;
   usage: Usage;
   latencyMs: number;
 }
 
-export async function translateFields(model: string, locale: TranslateLocale, fields: Record<string, string>, protectedNames: string[]): Promise<TranslateResult> {
+/** Translates into every requested language in one call; `keys` lists the fields each language needs. */
+export async function translateFields(
+  model: string,
+  fields: Record<string, string>,
+  keys: Partial<Record<TranslateLocale, string[]>>,
+  protectedNames: string[],
+): Promise<TranslateResult> {
   const prompt = loadPrompt("translate");
-  const info = LOCALES[locale];
-  const keys = Object.keys(fields);
+  const locales = (Object.keys(keys) as TranslateLocale[]).filter((l) => keys[l]?.length);
   const { masked, tokens } = maskFields(fields, protectedNames);
-  const schema = z.object(Object.fromEntries(keys.map((k) => [k, z.string()])) as Record<string, z.ZodString>);
+  const schema = z.object(
+    Object.fromEntries(locales.map((l) => [l, z.object(Object.fromEntries(keys[l]!.map((k) => [k, z.string()])) as Record<string, z.ZodString>)])),
+  );
   const jsonSchema = toResponseSchema(z.toJSONSchema(schema) as Record<string, unknown>);
+  const targets = locales.map((l) => `- \`${l}\`: ${LOCALES[l].language} for ${LOCALES[l].market}, formal address (${LOCALES[l].formality})`).join("\n");
+  const wanted = Object.fromEntries(locales.map((l) => [l, keys[l]]));
 
   let result;
   try {
     result = await generateJson({
       model,
-      system: render(prompt.system, { ...info, protected: protectedNames.length ? protectedNames.map((n) => `"${n}"`).join(", ") : "(none)" }),
-      content: [{ type: "text", text: render(prompt.user, { fields: JSON.stringify(masked, null, 2) }) }],
+      system: render(prompt.system, { targets, protected: protectedNames.length ? protectedNames.map((n) => `"${n}"`).join(", ") : "(none)" }),
+      content: [{ type: "text", text: render(prompt.user, { fields: JSON.stringify(masked, null, 2), keys: JSON.stringify(wanted) }) }],
       jsonSchema,
       effort: "low",
-      maxOutputTokens: 4096,
+      maxOutputTokens: 4096 * locales.length,
     });
   } catch (error) {
     throw Object.assign(error as Error, { promptVersion: prompt.version, ...(usageOf(error) ?? {}) });
   }
 
-  let parsed: Record<string, string>;
+  let parsed: z.infer<typeof schema>;
   try {
     parsed = schema.parse(JSON.parse(result.text));
   } catch {
     throw Object.assign(new AiError("invalid_output", "Translation did not match the schema"), { promptVersion: prompt.version, usage: result.usage, latencyMs: result.latencyMs });
   }
 
-  const ok: Record<string, string> = {};
-  const failed: Record<string, string> = {};
-  for (const key of keys) {
-    const problem = checkTranslation(masked[key], parsed[key], []);
-    if (problem) failed[key] = problem;
-    else ok[key] = unmask(parsed[key], tokens, locale);
+  const byLocale: TranslateResult["byLocale"] = {};
+  for (const locale of locales) {
+    const out = parsed[locale] as Record<string, string>;
+    const ok: Record<string, string> = {};
+    const failed: Record<string, string> = {};
+    for (const key of keys[locale]!) {
+      const problem = checkTranslation(masked[key], out[key], []);
+      if (problem) failed[key] = problem;
+      else ok[key] = unmask(out[key], tokens, locale);
+    }
+    byLocale[locale] = { fields: ok, failed };
   }
-  return { fields: ok, failed, promptVersion: prompt.version, usage: result.usage, latencyMs: result.latencyMs };
+  return { byLocale, promptVersion: prompt.version, usage: result.usage, latencyMs: result.latencyMs };
 }

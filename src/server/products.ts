@@ -186,8 +186,7 @@ function withManual(row: ProductRow, field: string) {
 }
 
 async function retranslate(row: ProductRow) {
-  const hash = englishSourceHash(row);
-  for (const locale of LOCALES) await enqueueTranslate(row.id, locale, hash);
+  await enqueueTranslate(row.id, englishSourceHash(row));
 }
 
 export async function approveProducts(storeId: string, ids: string[]) {
