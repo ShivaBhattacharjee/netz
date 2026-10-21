@@ -321,6 +321,24 @@ export const evalStatus = pgEnum("eval_status", ["queued", "running", "completed
 
 export type FieldScores = Record<string, { correct: number; total: number }>;
 
+export const evalSet = pgTable(
+  "eval_set",
+  {
+    id: text("id").primaryKey(),
+    storeId: storeRef(),
+    name: text("name").notNull(),
+    sheetUploadId: text("sheet_upload_id")
+      .notNull()
+      .references(() => upload.id, { onDelete: "cascade" }),
+    labelsKey: text("labels_key").notNull(),
+    products: integer("products").notNull(),
+    rows: integer("rows").notNull(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("eval_set_store_name_uq").on(t.storeId, t.name)],
+);
+
 export const experiment = pgTable(
   "experiment",
   {
@@ -328,6 +346,7 @@ export const experiment = pgTable(
     storeId: storeRef(),
     name: text("name").notNull(),
     set: text("set").notNull(),
+    setId: text("set_id").references(() => evalSet.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
   (t) => [index("experiment_store_idx").on(t.storeId)],
@@ -341,6 +360,7 @@ export const evalRun = pgTable(
     experimentId: text("experiment_id").references(() => experiment.id, { onDelete: "cascade" }),
     label: text("label").notNull(),
     set: text("set").notNull(),
+    setId: text("set_id").references(() => evalSet.id, { onDelete: "set null" }),
     model: text("model").notNull(),
     prompt: text("prompt").notNull(),
     promptVersion: text("prompt_version").notNull(),

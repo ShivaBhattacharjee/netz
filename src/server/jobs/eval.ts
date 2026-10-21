@@ -10,9 +10,6 @@ import { env } from "../env";
 import { scoreBuild, scoreCleaning } from "../evals/score";
 import { resolvePrompt } from "../evals/prompts";
 import { loadEvalSet } from "../evals/sets";
-import { buildGroups, cleanRows, sheetDecimalHint } from "../pipeline/group";
-import { detectHeader } from "../pipeline/headers";
-import { parseSheet } from "../pipeline/sheet";
 import { recordCalls } from "./calls";
 
 const PARALLEL = 4;
@@ -32,17 +29,9 @@ export async function runEval(job: Job<EvalJob>) {
 
   try {
     const config = env();
-    const { sheet, labels } = loadEvalSet(run.set);
+    if (!run.setId) throw new Error("The eval set was deleted");
+    const { groups, labels } = await loadEvalSet(run.storeId, run.setId);
     const prompt = await resolvePrompt(run.storeId, run.prompt);
-    const parsed = parseSheet(sheet, "csv");
-    const header = detectHeader(parsed.rows);
-    if (!header) throw new Error("Eval sheet has no header row");
-    const dataRows = parsed.rows
-      .slice(header.index + 1)
-      .map((raw, i) => ({ row: header.index + 2 + i, raw }))
-      .filter((r) => r.raw.some((c) => c.trim() !== ""));
-    const cleaned = cleanRows(dataRows, header, "EUR", sheetDecimalHint(dataRows.map((r) => r.raw), header));
-    const { groups } = buildGroups(cleaned, "EUR");
 
     const scores: FieldScores = {};
     const notes: string[] = [];

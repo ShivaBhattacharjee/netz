@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { evalRun, experiment } from "@/db/schema";
+import { evalRun, evalSet, experiment } from "@/db/schema";
 import { RERUN_MODELS } from "@/lib/models";
 import { newId } from "../ids";
 import { QUEUE, queue } from "../queues";
@@ -46,24 +46,32 @@ function toRun(r: RunRow, withNotes = false) {
 export type EvalRunView = ReturnType<typeof toRun>;
 
 export async function evalOptions(storeId: string) {
-  return { sets: listEvalSets(), prompts: await promptOptions(storeId), models: EVAL_MODELS };
+  return { sets: await listEvalSets(storeId), prompts: await promptOptions(storeId), models: EVAL_MODELS };
 }
 
-async function validate(storeId: string, set: string, variant: VariantInput) {
-  if (!listEvalSets().some((s) => s.name === set)) throw new EvalSetError(`Eval set "${set}" is not available`);
+type SetRow = { id: string; name: string };
+
+async function findSet(storeId: string, setId: string): Promise<SetRow> {
+  const [row] = await db.select({ id: evalSet.id, name: evalSet.name }).from(evalSet).where(and(eq(evalSet.id, setId), eq(evalSet.storeId, storeId)));
+  if (!row) throw new EvalSetError("Eval set not found");
+  return row;
+}
+
+async function validate(storeId: string, variant: VariantInput) {
   if (!EVAL_MODELS.some((m) => m.id === variant.model)) throw new EvalSetError(`Unknown model "${variant.model}"`);
   return resolvePrompt(storeId, variant.prompt);
 }
 
-async function createRun(storeId: string, set: string, limit: number, variant: VariantInput, label: string, experimentId: string | null) {
-  const prompt = await validate(storeId, set, variant);
+async function createRun(storeId: string, set: SetRow, limit: number, variant: VariantInput, label: string, experimentId: string | null) {
+  const prompt = await validate(storeId, variant);
   const id = newId("eval");
   await db.insert(evalRun).values({
     id,
     storeId,
     experimentId,
     label,
-    set,
+    set: set.name,
+    setId: set.id,
     model: variant.model,
     prompt: variant.prompt,
     promptVersion: prompt.version,
@@ -81,7 +89,7 @@ export async function listEvalRuns(storeId: string) {
 export async function createEvalRun(storeId: string, input: { set: string; limit: number } & VariantInput) {
   const prompt = await resolvePrompt(storeId, input.prompt);
   const label = `${prompt.name} · ${EVAL_MODELS.find((m) => m.id === input.model)?.label ?? input.model}`;
-  return createRun(storeId, input.set, input.limit, input, label, null);
+  return createRun(storeId, await findSet(storeId, input.set), input.limit, input, label, null);
 }
 
 export async function getEvalRun(storeId: string, id: string) {
@@ -107,12 +115,13 @@ export async function listExperiments(storeId: string) {
 }
 
 export async function createExperiment(storeId: string, input: { name: string; set: string; limit: number; a: VariantInput; b: VariantInput }) {
-  await validate(storeId, input.set, input.a);
-  await validate(storeId, input.set, input.b);
+  const set = await findSet(storeId, input.set);
+  await validate(storeId, input.a);
+  await validate(storeId, input.b);
   if (input.a.model === input.b.model && input.a.prompt === input.b.prompt) throw new EvalSetError("Variants A and B are identical");
   const id = newId("exp");
-  await db.insert(experiment).values({ id, storeId, name: input.name, set: input.set });
-  await createRun(storeId, input.set, input.limit, input.a, "A", id);
-  await createRun(storeId, input.set, input.limit, input.b, "B", id);
+  await db.insert(experiment).values({ id, storeId, name: input.name, set: set.name, setId: set.id });
+  await createRun(storeId, set, input.limit, input.a, "A", id);
+  await createRun(storeId, set, input.limit, input.b, "B", id);
   return id;
 }

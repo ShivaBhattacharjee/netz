@@ -1,6 +1,6 @@
 "use client";
 
-import { FlaskConical, Play, Target } from "lucide-react";
+import { FlaskConical, Play, Target, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { formatDateTime, formatDuration, formatNumber, formatUsd } from "@/lib/f
 import type { EvalOptions, EvalRun } from "@/lib/types";
 import { PageHeader, Panel } from "./common";
 import { EmptyState } from "./empty-state";
+import { EvalSetsPanel, UploadEvalSet } from "./eval-sets";
 import {
   AI_FIELDS,
   AccuracyBar,
@@ -40,7 +41,8 @@ function NewRun({
   onStarted: () => void;
   onPromptsChanged: () => void;
 }) {
-  const [set, setSet] = useState(options.sets[0]?.name ?? "");
+  const [picked, setSet] = useState(options.sets[0]?.id ?? "");
+  const set = options.sets.some((s) => s.id === picked) ? picked : (options.sets[0]?.id ?? "");
   const [model, setModel] = useState(options.models[0]?.id ?? "");
   const [prompt, setPrompt] = useState(options.prompts[0]?.name ?? "build-product");
   const [limit, setLimit] = useState("25");
@@ -76,7 +78,7 @@ function NewRun({
             label="Products to build"
             value={limit}
             onChange={setLimit}
-            available={options.sets.find((s) => s.name === set)?.products}
+            available={options.sets.find((s) => s.id === set)?.products}
           />
         </div>
         <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
@@ -155,6 +157,7 @@ function RunDetail({ runId, onClose }: { runId: string | null; onClose: () => vo
 export function EvaluationsView() {
   const [data, setData] = useState<(EvalOptions & { runs: EvalRun[] }) | null>(null);
   const [starting, setStarting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [openRun, setOpenRun] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -202,11 +205,23 @@ export function EvaluationsView() {
           description={
             data.sets.length
               ? "Run the pipeline on a labelled supplier sheet and see how accurate grouping, prices, categories, review decisions and claims are."
-              : "No labelled sets found. Generate them with python3 scripts/generate_evals.py, or set EVALS_DIR."
+              : "Upload a supplier sheet with a labels.json of the expected products, then run the pipeline on it and score every field."
           }
-          action={data.sets.length ? startButton("Run first evaluation") : undefined}
+          action={
+            data.sets.length ? (
+              startButton("Run first evaluation")
+            ) : (
+              <Button onClick={() => setUploading(true)}>
+                <Upload data-icon="inline-start" />
+                Upload labelled set
+              </Button>
+            )
+          }
         />
       ) : null}
+
+      {data.sets.length ? <EvalSetsPanel sets={data.sets} onUpload={() => setUploading(true)} onChanged={load} /> : null}
+      <UploadEvalSet open={uploading} onOpenChange={setUploading} onCreated={load} />
 
       {latest ? (
         <Panel title={`Latest: ${latest.label}`} icon={Target}>

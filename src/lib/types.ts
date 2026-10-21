@@ -185,8 +185,17 @@ export interface EvalRun {
   notes?: string[];
 }
 
+export interface EvalSet {
+  id: string;
+  name: string;
+  products: number;
+  rows: number;
+  file_name: string;
+  created_at: string;
+}
+
 export interface EvalOptions {
-  sets: { name: string; products: number; rows: number }[];
+  sets: EvalSet[];
   prompts: { name: string; label: string; version: string; custom: boolean }[];
   models: { id: string; label: string; hint: string }[];
 }

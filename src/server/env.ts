@@ -31,7 +31,6 @@ const schema = z
     AI_BUDGET_MIN_USD: z.coerce.number().positive().default(1),
     MOCK_LATENCY_MS: z.coerce.number().int().min(0).default(0),
     PROMPTS_DIR: z.string().default("prompts"),
-    EVALS_DIR: z.string().default("evals"),
 
     STORAGE_DIR: z.string().default(".data/uploads"),
     WEBHOOKS_ALLOW_PRIVATE: flag,

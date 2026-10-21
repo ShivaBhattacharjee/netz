@@ -67,7 +67,7 @@ Every stage writes its result before the next one runs, jobs are idempotent, and
 
 ## Test data
 
-`evals/` holds the sample sheets and photos used for testing and for the `/evaluations` page: `small`, `medium` and `large` labelled sets, the `final` 1 / 100 / 1,000 / 10,000-row sets, and `edge` files for the failure cases (bad encodings, formula injection, a renamed PDF, a ZIP bomb, too many rows). Each set has a README and `labels.json` with the expected products. Photo folders for the bigger sets are not committed; their `photos.zip` is. `scripts/generate_evals.py` recreates everything deterministically (`pip install pillow openpyxl`). `scripts/fake-anthropic.py` stands in for the Anthropic API and fails on purpose (rate limit, outage, timeout, invalid JSON, refusal, cut-off output, bad key), to check the cases in section 2 of EDGE-CASES.md against a running worker.
+`evals/` holds the sample sheets and photos used for testing. To score one on `/evaluations`, upload its `supplier-sheet.csv` and `labels.json` there as a labelled set. The sets are: `small`, `medium` and `large` labelled sets, the `final` 1 / 100 / 1,000 / 10,000-row sets, and `edge` files for the failure cases (bad encodings, formula injection, a renamed PDF, a ZIP bomb, too many rows). Each set has a README and `labels.json` with the expected products. Photo folders for the bigger sets are not committed; their `photos.zip` is. `scripts/generate_evals.py` recreates everything deterministically (`pip install pillow openpyxl`). `scripts/fake-anthropic.py` stands in for the Anthropic API and fails on purpose (rate limit, outage, timeout, invalid JSON, refusal, cut-off output, bad key), to check the cases in section 2 of EDGE-CASES.md against a running worker.
 
 ## Getting started
 
@@ -137,7 +137,7 @@ One web service runs everything:
 | `/products/[id]` | source rows beside the AI result, edits, claims, variants, translations, SEO |
 | `/storefront` | listed products, add or remove from the storefront, preview and public link to `/shop/<store>` |
 | `/metrics` | throughput, review rate, AI spend per model and import |
-| `/evaluations` | accuracy per field against labelled eval sets |
+| `/evaluations` | upload labelled sets (a sheet plus `labels.json`) and score accuracy per field against them |
 | `/experiments` | A/B runs of models and prompts on the same rows |
 | `/queue` | queues and workers |
 | `/settings/webhooks`, `/settings/api` | webhooks and API keys |
@@ -180,7 +180,7 @@ The second hardest part was keeping the row counts honest under concurrency. Eve
 - **Cite or drop.** Every claim and every attribute must come with the row, column and a verbatim quote. Code normalises case, accents and punctuation, checks the quote is in that cell, and checks the cell does not negate it ("not frost-proof" can never support "frost-proof"). Anything that fails is removed and the product goes to review.
 - **Confidence per field.** Any required field under 70% goes to review with the field named. Categories must be in the taxonomy.
 - **Structured output plus zod.** The schema narrows what the model can return, zod checks it, and one repair call carries the validation error.
-- **Measured against labels.** `evals/` has labelled sets with expected groups, prices, allowed and forbidden claims and statuses; `/evaluations` scores each field, and `pnpm test` asserts 100% cleaning accuracy on every set.
+- **Measured against labels.** `evals/` has labelled sets with expected groups, prices, allowed and forbidden claims and statuses; upload one, or your own in the same format, on `/evaluations` to score each field, and `pnpm test` asserts 100% cleaning accuracy on every set.
 
 What the numbers show: with a fake model that answers every row confidently, the 1,000-row medium set ends exactly as labelled (427 ready, 37 needs review). With real Claude Haiku the same sheet sent 363 of 464 products to review, almost all because of the model's own "confirm with the supplier" concerns rather than failed checks. The model errs on the side of caution, which is the right direction, but it is too cautious. The next step is to send only concerns about missing or conflicting facts to review and show the rest as notes.
 

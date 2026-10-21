@@ -159,7 +159,7 @@ export function OptionSelect({
 }
 
 export function setOptions(options: EvalOptions) {
-  return options.sets.map((s) => ({ value: s.name, label: `${s.name} · ${formatNumber(s.products)} products` }));
+  return options.sets.map((s) => ({ value: s.id, label: `${s.name} · ${formatNumber(s.products)} products` }));
 }
 
 export function modelOptions(options: EvalOptions) {

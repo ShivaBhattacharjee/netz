@@ -1,6 +1,6 @@
 "use client";
 
-import { FlaskConical, Plus, Trophy } from "lucide-react";
+import { FlaskConical, Plus, Trophy, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import type { EvalOptions, EvalRun, Experiment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "./common";
 import { EmptyState } from "./empty-state";
+import { UploadEvalSet } from "./eval-sets";
 import {
   OptionSelect,
   PromptPicker,
@@ -48,7 +49,8 @@ function NewExperiment({
 }) {
   const firstPrompt = options.prompts[0]?.name ?? "build-product";
   const [name, setName] = useState("");
-  const [set, setSet] = useState(options.sets[0]?.name ?? "");
+  const [picked, setSet] = useState(options.sets[0]?.id ?? "");
+  const set = options.sets.some((s) => s.id === picked) ? picked : (options.sets[0]?.id ?? "");
   const [limit, setLimit] = useState("25");
   const [a, setA] = useState<Variant>({ model: "claude-haiku-5-5", prompt: firstPrompt });
   const [b, setB] = useState<Variant>({ model: "claude-sonnet-5-5", prompt: firstPrompt });
@@ -96,7 +98,7 @@ function NewExperiment({
             label="Products per variant"
             value={limit}
             onChange={setLimit}
-            available={options.sets.find((s) => s.name === set)?.products}
+            available={options.sets.find((s) => s.id === set)?.products}
           />
           <div className="grid gap-4 md:grid-cols-2">
             {variantFields("A", a, setA)}
@@ -193,6 +195,7 @@ function Comparison({ experiment }: { experiment: Experiment }) {
 export function ExperimentsView() {
   const [data, setData] = useState<(EvalOptions & { experiments: Experiment[] }) | null>(null);
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const load = useCallback(() => {
     api<EvalOptions & { experiments: Experiment[] }>("/api/experiments")
@@ -236,11 +239,21 @@ export function ExperimentsView() {
           description={
             data.sets.length
               ? "Compare two models or prompts on the same labelled products: accuracy, invented claims, cost per 1,000 products and speed."
-              : "No labelled sets found. Generate them with python3 scripts/generate_evals.py, or set EVALS_DIR."
+              : "Upload a supplier sheet with a labels.json of the expected products first, then compare two models or prompts on it."
           }
-          action={data.sets.length ? createButton("Create experiment") : undefined}
+          action={
+            data.sets.length ? (
+              createButton("Create experiment")
+            ) : (
+              <Button onClick={() => setUploading(true)}>
+                <Upload data-icon="inline-start" />
+                Upload labelled set
+              </Button>
+            )
+          }
         />
       ) : null}
+      <UploadEvalSet open={uploading} onOpenChange={setUploading} onCreated={load} />
       {data.experiments.map((e) => (
         <Comparison key={e.id} experiment={e} />
       ))}
