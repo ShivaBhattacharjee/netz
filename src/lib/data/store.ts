@@ -227,6 +227,18 @@ export const actions = {
     }
   },
 
+  async raiseBudget(id: string, budgetUsd: number) {
+    try {
+      await api(`/api/imports/${id}/budget`, { method: "POST", json: { budget_usd: budgetUsd } });
+      toast.success(`Budget raised to $${budgetUsd.toFixed(2)}`);
+      scheduleRefresh(false);
+      return true;
+    } catch (error) {
+      fail(error, "Could not raise the budget");
+      return false;
+    }
+  },
+
   async approve(ids: string[]) {
     const before = state.products;
     const set = new Set(ids);

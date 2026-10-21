@@ -11,14 +11,14 @@ const schema = z.object({
   STORAGE_DIR: z.string().default(".data/uploads"),
   AI_RPM: z.coerce.number().int().positive().optional(),
   MOCK_LATENCY_MS: z.coerce.number().int().min(0).default(0),
+  AI_BUDGET_MULTIPLIER: z.coerce.number().positive().default(3),
+  AI_BUDGET_MIN_USD: z.coerce.number().positive().default(1),
 })
   .transform((e) => ({ ...e, AI_MODE: e.AI_MODE ?? (e.ANTHROPIC_API_KEY ? "anthropic" : "mock") }))
   .refine((e) => e.AI_MODE === "mock" || e.ANTHROPIC_API_KEY.length > 0, {
     path: ["ANTHROPIC_API_KEY"],
     message: "AI_MODE=anthropic needs ANTHROPIC_API_KEY",
   });
-
-export type Env = z.infer<typeof schema>;
 
 const appSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters (openssl rand -base64 32)"),
@@ -32,6 +32,8 @@ export function assertAppEnv() {
     throw new Error(`Invalid environment:\n  ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n  ")}`);
   }
 }
+
+export type Env = z.infer<typeof schema>;
 
 let cached: Env | undefined;
 

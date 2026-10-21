@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Download, ListTree, MoreHorizontal, RotateCw, Trash2 } from "lucide-react";
+import { Ban, CircleDollarSign, Download, ListTree, MoreHorizontal, RotateCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -41,6 +41,10 @@ export function retryLabel(job: ImportJob) {
     : `Retry ${formatNumber(job.counts.failed)} failed row${job.counts.failed === 1 ? "" : "s"}`;
 }
 
+export function nextBudgetUsd(job: ImportJob) {
+  return Math.ceil(((job.budget_micros ?? 0) * 2) / 10_000) / 100;
+}
+
 export async function downloadFailed(job: ImportJob) {
   const rows = await fetchImportRows(job.id, "failed");
   const csv = ["row,sku,reason", ...rows.map((r) => `${r.row},${r.sku},"${(r.reason ?? "").replace(/"/g, '""')}"`)].join("\n");
@@ -71,6 +75,12 @@ export function ImportActions({ job, showView = true, onDeleted }: { job: Import
               </Link>
             </DropdownMenuItem>
           ) : null}
+          {job.budget_paused ? (
+            <DropdownMenuItem onSelect={() => void actions.raiseBudget(job.id, nextBudgetUsd(job))}>
+              <CircleDollarSign />
+              Raise budget to ${nextBudgetUsd(job).toFixed(2)}
+            </DropdownMenuItem>
+          ) : null}
           {canRetry(job) ? (
             <DropdownMenuItem onSelect={() => void actions.retry(job.id)}>
               <RotateCw />
@@ -83,7 +93,7 @@ export function ImportActions({ job, showView = true, onDeleted }: { job: Import
               Download failed rows
             </DropdownMenuItem>
           ) : null}
-          {showView || canRetry(job) || job.counts.failed > 0 ? <DropdownMenuSeparator /> : null}
+          {showView || canRetry(job) || job.budget_paused || job.counts.failed > 0 ? <DropdownMenuSeparator /> : null}
           {active ? (
             <DropdownMenuItem variant="destructive" onSelect={() => setConfirm("cancel")}>
               <Ban />

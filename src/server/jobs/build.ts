@@ -1,5 +1,5 @@
 import { type Job, Worker } from "bullmq";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { aiResult, importGroup, importJob, photo, product, productPhoto, sourceRow, variant } from "@/db/schema";
 import { type AiCallRecord, type BuildOutput, type BuiltProduct, finalizeBuild, generateBuild } from "../ai/build";
@@ -13,6 +13,7 @@ import type { GroupInput } from "../pipeline/group";
 import { comparePhotoNames } from "../pipeline/photos";
 import { slugify } from "../pipeline/text";
 import { type BuildJob, type RerunJob, enqueueTranslate } from "../queues";
+import { overBudget } from "./budget";
 import { currentPause, pauseAi, pauseFor, recordProviderFailure, recordProviderSuccess } from "./gate";
 import { recordCalls } from "./calls";
 import { publish, refreshCounts } from "./progress";
@@ -45,12 +46,24 @@ async function uniqueHandle(tx: Tx, storeId: string, title: string, productId: s
 }
 
 async function persist(group: typeof importGroup.$inferSelect, input: GroupInput, built: BuiltProduct, calls: AiCallRecord[]) {
-  const status = built.reviewReasons.length > 0 ? ("needs_review" as const) : ("ready" as const);
-  const reviewReason = built.reviewReasons.join("; ") || null;
-
   return db.transaction(async (tx) => {
     const [prior] = await tx.select().from(product).where(and(eq(product.storeId, group.storeId), eq(product.groupKey, group.groupKey))).for("update");
     const productId = prior?.id ?? newId("prod");
+
+    const incoming = new Set(input.variants.map((v) => v.sku));
+    const missing = prior
+      ? (await tx.select({ id: variant.id, sku: variant.sku }).from(variant).where(eq(variant.productId, productId))).filter((v) => !incoming.has(v.sku))
+      : [];
+    const reasons = [...built.reviewReasons];
+    if (missing.length) {
+      reasons.push(`Missing from latest import: ${missing.slice(0, 5).map((v) => v.sku).join(", ")}${missing.length > 5 ? ` and ${missing.length - 5} more` : ""}`);
+      await tx
+        .update(variant)
+        .set({ missingSince: group.importId })
+        .where(and(inArray(variant.id, missing.map((v) => v.id)), isNull(variant.missingSince)));
+    }
+    const status = reasons.length > 0 ? ("needs_review" as const) : ("ready" as const);
+    const reviewReason = reasons.join("; ") || null;
     const manual = new Set(prior?.manualFields ?? []);
     const keep = <T>(field: string, next: T, current: T | undefined) => (manual.has(field) && current !== undefined ? current : next);
 
@@ -79,7 +92,7 @@ async function persist(group: typeof importGroup.$inferSelect, input: GroupInput
 
     for (const [position, v] of input.variants.entries()) {
       if (manual.has(`variants.${v.sku}`)) continue;
-      const set = { productId, options: v.options, priceCents: v.price_cents, currency: v.currency, weightGrams: v.weight_grams, position, skuDerived: v.sku_derived };
+      const set = { productId, options: v.options, priceCents: v.price_cents, currency: v.currency, weightGrams: v.weight_grams, position, skuDerived: v.sku_derived, missingSince: null };
       await tx
         .insert(variant)
         .values({ id: newId("var"), storeId: group.storeId, sku: v.sku, ...set })
@@ -97,7 +110,7 @@ async function persist(group: typeof importGroup.$inferSelect, input: GroupInput
 
     await tx
       .update(sourceRow)
-      .set({ status: status === "ready" ? "done" : "needs_review", reason: built.reviewReasons[0] ?? null, productId })
+      .set({ status: status === "ready" ? "done" : "needs_review", reason: reasons[0] ?? null, productId })
       .where(and(eq(sourceRow.importId, group.importId), eq(sourceRow.groupKey, group.groupKey), eq(sourceRow.status, "pending")));
 
     await tx.update(importGroup).set({ status: status === "ready" ? "done" : "needs_review", reason: reviewReason, productId }).where(eq(importGroup.id, group.id));
@@ -141,6 +154,7 @@ export async function runBuild(job: Job<BuildJob>, worker: Worker) {
 
   const [cached] = await db.select().from(aiResult).where(eq(aiResult.key, cacheKey));
   if (cached) output = cached.output as BuildOutput;
+  else if (config.AI_MODE !== "mock" && (await overBudget(importId))) return { skipped: "budget" };
   else if (config.AI_MODE === "mock") {
     if (config.MOCK_LATENCY_MS) await new Promise((resolve) => setTimeout(resolve, config.MOCK_LATENCY_MS));
     output = mockBuild(input, "Built in demo mode without AI");

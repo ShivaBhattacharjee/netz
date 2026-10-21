@@ -11,6 +11,7 @@ export interface Variant {
   price_cents: number | null;
   currency: string;
   weight_grams: number | null;
+  missing_from_import: boolean;
 }
 
 export interface Claim {
@@ -93,6 +94,9 @@ export interface ImportJob {
   created_at: string;
   unmatched_photos: { name: string; url: string | null }[];
   cost_micros: number;
+  estimate_micros: number | null;
+  budget_micros: number | null;
+  budget_paused: boolean;
 }
 
 export interface ImportRow {

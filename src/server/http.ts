@@ -4,11 +4,11 @@ import { type ApiContext, getApiContext } from "@/lib/auth/session";
 import { ApiKeyInputError } from "./api-keys";
 import { EvalSetError } from "./evals/sets";
 import { ImportInputError } from "./imports";
+import { BudgetError } from "./jobs/budget";
 import { ProductInputError } from "./products";
-import { WebhookInputError } from "./webhooks";
 import { type Rule, consume } from "./rate-limit";
+import { WebhookInputError } from "./webhooks";
 
-export function withStore<P>(handler: (ctx: ApiContext, request: Request, params: P) => Promise<Response>, opts: { sessionOnly?: boolean } = {}) {
 const LIMITS = {
   key: { window: 60, max: 600 },
   store: { window: 60, max: 1200 },
@@ -29,16 +29,24 @@ export async function limitRequest(ctx: ApiContext, scope: "api" | "upload" = "a
   );
 }
 
+export function withStore<P>(handler: (ctx: ApiContext, request: Request, params: P) => Promise<Response>, opts: { sessionOnly?: boolean } = {}) {
   return async (request: Request, { params }: { params: Promise<P> }) => {
     const ctx = await getApiContext();
     if (!ctx) return NextResponse.json({ error: "Not signed in or invalid API key" }, { status: 401 });
     if (opts.sessionOnly && ctx.via !== "session") return NextResponse.json({ error: "This endpoint needs a signed-in user" }, { status: 403 });
-    try {
     const limited = await limitRequest(ctx);
     if (limited) return limited;
+    try {
       return await handler(ctx, request, await params);
     } catch (error) {
-      if (error instanceof ImportInputError || error instanceof ProductInputError || error instanceof WebhookInputError || error instanceof ApiKeyInputError || error instanceof EvalSetError) {
+      if (
+        error instanceof ImportInputError ||
+        error instanceof ProductInputError ||
+        error instanceof WebhookInputError ||
+        error instanceof ApiKeyInputError ||
+        error instanceof EvalSetError ||
+        error instanceof BudgetError
+      ) {
         return NextResponse.json({ error: error.message }, { status: error.message.endsWith("not found") ? 404 : 400 });
       }
       if (error instanceof z.ZodError) {

@@ -80,6 +80,8 @@ export const importJob = pgTable(
     error: text("error"),
     pausedUntil: timestamp("paused_until"),
     costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
+    estimateMicros: bigint("estimate_micros", { mode: "number" }),
+    budgetMicros: bigint("budget_micros", { mode: "number" }),
     createdAt: createdAt(),
     startedAt: timestamp("started_at"),
     finishedAt: timestamp("finished_at"),
@@ -201,6 +203,7 @@ export const variant = pgTable(
     weightGrams: integer("weight_grams"),
     position: integer("position").notNull().default(0),
     skuDerived: boolean("sku_derived").notNull().default(false),
+    missingSince: text("missing_since"),
   },
   (t) => [uniqueIndex("variant_store_sku_uq").on(t.storeId, t.sku), index("variant_product_idx").on(t.productId)],
 );

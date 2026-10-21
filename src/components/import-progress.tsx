@@ -37,6 +37,7 @@ export function ImportProgressCell({ job }: { job: ImportJob }) {
 }
 
 export function statusDetail(job: ImportJob): string | null {
+  if (job.budget_paused) return "AI budget reached · raise it to continue";
   if (job.status === "paused" && job.resume_in_seconds !== null) {
     const minutes = Math.ceil(job.resume_in_seconds / 60);
     return `Rate limited · resumes in ${minutes} min`;

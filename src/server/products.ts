@@ -90,7 +90,7 @@ function toProduct(row: ProductRow, rel: Awaited<ReturnType<typeof loadRelations
     attributes: row.attributes,
     variants: rel.variants
       .filter((v) => v.productId === row.id)
-      .map((v) => ({ sku: v.sku, options: v.options, price_cents: v.priceCents, currency: v.currency, weight_grams: v.weightGrams })),
+      .map((v) => ({ sku: v.sku, options: v.options, price_cents: v.priceCents, currency: v.currency, weight_grams: v.weightGrams, missing_from_import: v.missingSince !== null })),
     claims: row.claims,
     confidence: row.confidence,
     status: row.status,

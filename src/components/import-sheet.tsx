@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Download, RotateCw } from "lucide-react";
+import { ArrowUpRight, CircleDollarSign, Download, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { actions } from "@/lib/data/store";
 import { formatBytes, formatDateTime, formatNumber, formatUsd } from "@/lib/format";
 import type { ImportJob } from "@/lib/types";
 import { ImportStatusLabel } from "./common";
-import { canRetry, downloadFailed, retryLabel } from "./import-actions";
+import { canRetry, downloadFailed, nextBudgetUsd, retryLabel } from "./import-actions";
 import { ImportBar, statusDetail } from "./import-progress";
 import { UnmatchedPhotos } from "./unmatched-photos";
 
@@ -86,12 +86,20 @@ function Body({ job }: { job: ImportJob }) {
           <Row label="Photos">{formatNumber(job.photo_count)}</Row>
           <Row label="Unmatched photos">{formatNumber(job.unmatched_photos.length)}</Row>
           <Row label="AI spend">{formatUsd(job.cost_micros)}</Row>
-          {job.error && job.status !== "paused" ? <Row label="Error">{job.error}</Row> : null}
+          {job.estimate_micros !== null ? <Row label="Estimated spend">{formatUsd(job.estimate_micros)}</Row> : null}
+          {job.budget_micros !== null ? <Row label="AI budget">{formatUsd(job.budget_micros)}</Row> : null}
+          {job.error && (job.status !== "paused" || job.budget_paused) ? <Row label={job.budget_paused ? "Paused" : "Error"}>{job.error}</Row> : null}
         </dl>
 
       </div>
 
       <SheetFooter className="flex-row gap-2 border-t p-5">
+        {job.budget_paused ? (
+          <Button variant="outline" onClick={() => void actions.raiseBudget(job.id, nextBudgetUsd(job))}>
+            <CircleDollarSign data-icon="inline-start" />
+            Raise budget to ${nextBudgetUsd(job).toFixed(2)}
+          </Button>
+        ) : null}
         {canRetry(job) ? (
           <Button variant="outline" onClick={() => void actions.retry(job.id)}>
             <RotateCw data-icon="inline-start" />

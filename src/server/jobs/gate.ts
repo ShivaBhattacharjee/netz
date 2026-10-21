@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, isNotNull, or } from "drizzle-orm";
 import { db } from "@/db";
 import { importJob } from "@/db/schema";
 import type { AiError } from "../ai/anthropic";
@@ -31,7 +31,7 @@ export async function pauseAi(ms: number, reason: string) {
   const result = await db
     .update(importJob)
     .set({ status: "paused", pausedUntil: new Date(Math.max(until, existing?.until ?? 0)) })
-    .where(inArray(importJob.status, ["processing", "paused"]))
+    .where(or(eq(importJob.status, "processing"), and(eq(importJob.status, "paused"), isNotNull(importJob.pausedUntil))))
     .returning({ id: importJob.id });
   log.warn("AI paused", { ms, reason, imports: result.length });
 }
@@ -62,5 +62,5 @@ export async function recordProviderSuccess(importId: string | null) {
   await db
     .update(importJob)
     .set({ status: "processing", pausedUntil: null })
-    .where(and(eq(importJob.id, importId), eq(importJob.status, "paused")));
+    .where(and(eq(importJob.id, importId), eq(importJob.status, "paused"), isNotNull(importJob.pausedUntil)));
 }

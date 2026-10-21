@@ -76,7 +76,10 @@ function Body({ product }: { product: Product }) {
               <ul className="divide-y rounded-lg border text-sm">
                 {product.variants.map((v) => (
                   <li key={v.sku} className="flex items-center gap-3 px-3 py-2">
-                    <span className="min-w-0 flex-1 truncate">{Object.values(v.options).join(", ")}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {Object.values(v.options).join(", ")}
+                      {v.missing_from_import ? <span className="ml-2 text-xs text-warning">Not in latest import</span> : null}
+                    </span>
                     <span className="text-xs tabular-nums text-muted-foreground">{formatWeight(v.weight_grams)}</span>
                     <span className={cn("w-20 text-right tabular-nums", v.price_cents === null && "text-warning")}>
                       {v.price_cents === null ? "Missing" : formatMoney(v.price_cents, v.currency)}

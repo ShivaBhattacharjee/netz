@@ -6,6 +6,7 @@ import type { ImportJob, ImportRow } from "@/lib/types";
 import { newId } from "./ids";
 import { log } from "./log";
 import { MAX_PHOTOS } from "./pipeline/photos";
+import { isBudgetPaused } from "./jobs/budget";
 import { refreshCounts } from "./jobs/progress";
 import { enqueueBuilds, enqueueParse } from "./queues";
 
@@ -17,9 +18,9 @@ export const createImportSchema = z.object({
 
 export class ImportInputError extends Error {}
 
-async function unmatchedPhotoUrls(importIds: string[]) {
 const MAX_RUNNING_IMPORTS = 3;
 
+async function unmatchedPhotoUrls(importIds: string[]) {
   if (importIds.length === 0) return new Map<string, Map<string, string>>();
   const rows = await db
     .select({ id: photo.id, importId: photo.importId, fileName: photo.fileName })
@@ -51,6 +52,9 @@ function toImportJob(row: typeof importJob.$inferSelect, urls?: Map<string, stri
     created_at: row.createdAt.toISOString(),
     unmatched_photos: row.unmatchedPhotos.map((name) => ({ name, url: urls?.get(name) ?? null })),
     cost_micros: row.costMicros,
+    estimate_micros: row.estimateMicros,
+    budget_micros: row.budgetMicros,
+    budget_paused: isBudgetPaused(row),
   };
 }
 
@@ -64,10 +68,6 @@ export async function createImport(storeId: string, userId: string | null, input
   const missing = input.photo_upload_ids.filter((id) => byId.get(id)?.kind !== "photo" && byId.get(id)?.kind !== "zip");
   if (missing.length) throw new ImportInputError(`Not a photo or ZIP upload in this store: ${missing.slice(0, 5).join(", ")}`);
 
-  const [owner] = await db.select({ currency: store.defaultCurrency }).from(store).where(eq(store.id, storeId));
-  const [created] = await db
-    .insert(importJob)
-    .values({
   const [{ running }] = await db
     .select({ running: count() })
     .from(importJob)
@@ -76,6 +76,10 @@ export async function createImport(storeId: string, userId: string | null, input
     throw new ImportInputError(`At most ${MAX_RUNNING_IMPORTS} imports can run at once. Wait for one to finish or cancel it.`);
   }
 
+  const [owner] = await db.select({ currency: store.defaultCurrency }).from(store).where(eq(store.id, storeId));
+  const [created] = await db
+    .insert(importJob)
+    .values({
       id: newId("imp"),
       storeId,
       createdBy: userId,

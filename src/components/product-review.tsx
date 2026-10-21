@@ -123,6 +123,7 @@ function VariantRow({ productId, variant, manual }: { productId: string; variant
       <td className="px-3 py-2 font-mono text-xs">
         {variant.sku}
         {manual ? <span className="ml-2 font-sans text-[10px] text-muted-foreground">edited</span> : null}
+        {variant.missing_from_import ? <span className="ml-2 font-sans text-[10px] text-warning">not in latest import</span> : null}
       </td>
       <td className="px-3 py-2">{Object.values(variant.options).join(", ")}</td>
       <td className="px-2 py-1.5">

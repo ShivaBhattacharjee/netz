@@ -11,6 +11,7 @@ import { chooseRoute } from "../pipeline/route";
 import { SheetError, parseSheet } from "../pipeline/sheet";
 import { type ParseJob, enqueueBuilds } from "../queues";
 import { storage } from "../storage";
+import { budgetFor, estimateMicros } from "./budget";
 import { failImport, refreshCounts } from "./progress";
 
 export const MAX_ROWS = 10_000;
@@ -134,6 +135,7 @@ export async function runParse(job: Job<ParseJob>) {
       };
     });
     const skippedByKey = new Map(groupRows.filter((g) => g.status === "skipped").map((g) => [g.groupKey, g]));
+    const estimate = estimateMicros(groupRows.filter((g) => g.status === "pending"));
 
     const rowValues = cleaned.map((r) => {
       const o = outcomeByRow.get(r.row)!;
@@ -173,6 +175,8 @@ export async function runParse(job: Job<ParseJob>) {
           totalRows: cleaned.length,
           photoCount: photos.filter((p) => p.status !== "invalid").length,
           unmatchedPhotos: photos.filter((p) => p.status === "unmatched").map((p) => p.fileName),
+          estimateMicros: estimate,
+          budgetMicros: budgetFor(estimate),
         })
         .where(eq(importJob.id, importId));
     });
