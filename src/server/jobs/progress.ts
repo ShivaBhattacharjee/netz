@@ -16,27 +16,38 @@ export async function publish(event: Record<string, unknown>) {
 }
 
 export async function refreshCounts(importId: string) {
-  const rows = await db.select({ status: sourceRow.status, n: count() }).from(sourceRow).where(eq(sourceRow.importId, importId)).groupBy(sourceRow.status);
-  const counts: RowCounts = { pending: 0, done: 0, needs_review: 0, failed: 0 };
-  for (const r of rows) counts[r.status] = Number(r.n);
+  const result = await db.transaction(async (tx) => {
+    // Lock before counting: concurrent refreshes otherwise let an older count overwrite a newer one.
+    const [current] = await tx
+      .select({ totalRows: importJob.totalRows, storeId: importJob.storeId })
+      .from(importJob)
+      .where(eq(importJob.id, importId))
+      .for("update");
+    if (!current) return null;
 
-  const [current] = await db.select({ totalRows: importJob.totalRows, storeId: importJob.storeId }).from(importJob).where(eq(importJob.id, importId));
-  if (!current) return;
-  const sum = counts.pending + counts.done + counts.needs_review + counts.failed;
-  const mismatch = sum !== current.totalRows ? `Row counts do not add up: ${sum} of ${current.totalRows}` : null;
-  if (mismatch) log.error("row count invariant broken", { importId, sum, total: current.totalRows });
+    const rows = await tx.select({ status: sourceRow.status, n: count() }).from(sourceRow).where(eq(sourceRow.importId, importId)).groupBy(sourceRow.status);
+    const counts: RowCounts = { pending: 0, done: 0, needs_review: 0, failed: 0 };
+    for (const r of rows) counts[r.status] = Number(r.n);
 
-  await db.update(importJob).set({ counts }).where(eq(importJob.id, importId));
+    const sum = counts.pending + counts.done + counts.needs_review + counts.failed;
+    const mismatch = sum !== current.totalRows ? `Row counts do not add up: ${sum} of ${current.totalRows}` : null;
+    if (mismatch) log.error("row count invariant broken", { importId, sum, total: current.totalRows });
 
-  let completed = false;
-  if (counts.pending === 0) {
-    const done = await db
-      .update(importJob)
-      .set({ status: "completed", finishedAt: new Date(), pausedUntil: null, ...(mismatch ? { error: mismatch } : {}) })
-      .where(sql`${importJob.id} = ${importId} and ${inArray(importJob.status, ["processing", "paused"])}`)
-      .returning({ id: importJob.id });
-    completed = done.length > 0;
-  }
+    await tx.update(importJob).set({ counts }).where(eq(importJob.id, importId));
+
+    let completed = false;
+    if (counts.pending === 0) {
+      const done = await tx
+        .update(importJob)
+        .set({ status: "completed", finishedAt: new Date(), pausedUntil: null, ...(mismatch ? { error: mismatch } : {}) })
+        .where(sql`${importJob.id} = ${importId} and ${inArray(importJob.status, ["processing", "paused"])}`)
+        .returning({ id: importJob.id });
+      completed = done.length > 0;
+    }
+    return { current, counts, completed };
+  });
+  if (!result) return;
+  const { current, counts, completed } = result;
 
   await publish({ type: completed ? "import.completed" : "import.progress", importId, storeId: current.storeId, counts });
   if (completed) {
