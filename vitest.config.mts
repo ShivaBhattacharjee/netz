@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   test: {
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/*.test.ts"],
     testTimeout: 30_000,
     env: {
       DATABASE_URL: "postgres://test@localhost:5433/test",
