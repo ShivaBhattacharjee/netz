@@ -7,7 +7,7 @@ import { newId } from "../ids";
 import { QUEUE, queue } from "../queues";
 import { EvalSetError, listEvalSets } from "./sets";
 
-export const EVAL_MODELS = [{ id: "auto", label: "Routed (fast + strong)", hint: "What imports use", tier: "auto" }, ...RERUN_MODELS] as const;
+export const EVAL_MODELS = RERUN_MODELS;
 
 export interface VariantInput {
   model: string;

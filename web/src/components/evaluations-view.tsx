@@ -4,8 +4,7 @@ import { FlaskConical, Play, Target } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { api } from "@/lib/data/api";
 import { formatDateTime, formatDuration, formatNumber, formatUsd } from "@/lib/format";
 import type { EvalOptions, EvalRun } from "@/lib/types";
@@ -15,6 +14,7 @@ import {
   AI_FIELDS,
   AccuracyBar,
   OptionSelect,
+  PromptSource,
   RunStatus,
   SAMPLE_SIZES,
   accuracy,
@@ -29,7 +29,7 @@ import { PageLoader } from "./page-loader";
 
 function NewRun({ options, open, onOpenChange, onStarted }: { options: EvalOptions; open: boolean; onOpenChange: (o: boolean) => void; onStarted: () => void }) {
   const [set, setSet] = useState(options.sets[0]?.name ?? "");
-  const [model, setModel] = useState("auto");
+  const [model, setModel] = useState(options.models[0]?.id ?? "");
   const [prompt, setPrompt] = useState(options.prompts[0]?.name ?? "build-product");
   const [limit, setLimit] = useState("25");
   const [busy, setBusy] = useState(false);
@@ -49,28 +49,31 @@ function NewRun({ options, open, onOpenChange, onStarted }: { options: EvalOptio
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Run evaluation</DialogTitle>
-          <DialogDescription>Runs the real pipeline on a labelled set and scores every field against the labels. AI calls are billed.</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-4">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
+        <SheetHeader className="border-b p-5">
+          <SheetTitle className="text-lg">Run evaluation</SheetTitle>
+          <SheetDescription>Runs the real pipeline on a labelled set and scores every field against the labels. AI calls are billed.</SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-5">
           <OptionSelect id="eval-set" label="Labelled set" value={set} onChange={setSet} options={setOptions(options)} />
           <OptionSelect id="eval-model" label="Model" value={model} onChange={setModel} options={modelOptions(options)} />
-          <OptionSelect id="eval-prompt" label="Prompt" value={prompt} onChange={setPrompt} options={promptOptions(options)} />
+          <div className="flex flex-col gap-2">
+            <OptionSelect id="eval-prompt" label="Prompt" value={prompt} onChange={setPrompt} options={promptOptions(options)} />
+            <PromptSource name={prompt} />
+          </div>
           <OptionSelect id="eval-limit" label="Products to build" value={limit} onChange={setLimit} options={SAMPLE_SIZES} />
         </div>
-        <DialogFooter>
+        <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!set || busy} onClick={() => void start()}>
+          <Button disabled={!set || !model || busy} onClick={() => void start()}>
             {busy ? "Starting" : "Start evaluation"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

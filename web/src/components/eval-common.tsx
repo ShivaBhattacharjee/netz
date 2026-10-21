@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/lib/data/api";
 import { formatNumber } from "@/lib/format";
 import type { EvalOptions, EvalRun } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -111,4 +113,32 @@ export function modelOptions(options: EvalOptions) {
 
 export function promptOptions(options: EvalOptions) {
   return options.prompts.map((p) => ({ value: p.name, label: `${p.name} (${p.version})` }));
+}
+
+export function PromptSource({ name }: { name: string }) {
+  const [open, setOpen] = useState(false);
+  const [prompt, setPrompt] = useState<{ file: string; version: string; system: string; user: string } | null>(null);
+
+  useEffect(() => {
+    if (!open || prompt?.file === `prompts/${name}.md`) return;
+    api<{ file: string; version: string; system: string; user: string }>(`/api/prompts/${name}`)
+      .then(setPrompt)
+      .catch(() => setPrompt(null));
+  }, [open, name, prompt?.file]);
+
+  return (
+    <div className="flex flex-col gap-2 text-xs text-muted-foreground">
+      <p>
+        Loaded from <span className="font-mono text-foreground">web/prompts/{name}.md</span>. The version in its front matter is saved with every result.{" "}
+        <button type="button" className="plain-button underline underline-offset-4 hover:text-foreground" onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide prompt" : "Show prompt"}
+        </button>
+      </p>
+      {open ? (
+        <pre className="max-h-72 overflow-auto whitespace-pre-wrap border bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
+          {prompt ? `# System\n${prompt.system}\n\n# User\n${prompt.user}` : "Loading…"}
+        </pre>
+      ) : null}
+    </div>
+  );
 }

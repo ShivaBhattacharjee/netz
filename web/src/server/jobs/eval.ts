@@ -11,7 +11,6 @@ import { scoreBuild, scoreCleaning } from "../evals/score";
 import { loadEvalSet } from "../evals/sets";
 import { buildGroups, cleanRows, sheetDecimalHint } from "../pipeline/group";
 import { detectHeader } from "../pipeline/headers";
-import { chooseRoute } from "../pipeline/route";
 import { parseSheet } from "../pipeline/sheet";
 import { recordCalls } from "./calls";
 
@@ -62,7 +61,7 @@ export async function runEval(job: Job<EvalJob>) {
       const label = sample[index];
       const group = byKey.get(label.group);
       if (!group) return;
-      const model = run.model === "auto" ? (chooseRoute(group).route === "strong" ? config.GEMINI_MODEL_STRONG : config.GEMINI_MODEL_FAST) : run.model;
+      const model = run.model;
       let built: BuiltProduct | null = null;
       if (config.AI_MODE === "mock") {
         built = finalizeBuild(group, mockBuild(group, "Built in demo mode without AI"));

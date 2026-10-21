@@ -13,7 +13,7 @@ import type { EvalOptions, EvalRun, Experiment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "./common";
 import { EmptyState } from "./empty-state";
-import { OptionSelect, RunStatus, SAMPLE_SIZES, accuracy, fieldLabel, modelOptions, overallAccuracy, pct, promptOptions, setOptions } from "./eval-common";
+import { OptionSelect, PromptSource, RunStatus, SAMPLE_SIZES, accuracy, fieldLabel, modelOptions, overallAccuracy, pct, promptOptions, setOptions } from "./eval-common";
 import { PageLoader } from "./page-loader";
 
 interface Variant {
@@ -47,10 +47,11 @@ function NewExperiment({ options, open, onOpenChange, onStarted }: { options: Ev
   }
 
   const variantFields = (key: "A" | "B", value: Variant, set: (v: Variant) => void) => (
-    <fieldset className="flex flex-col gap-3 rounded-lg border p-3">
+    <fieldset className="flex flex-col gap-3 border p-3">
       <legend className="px-1 text-sm font-medium">Variant {key}</legend>
       <OptionSelect id={`exp-${key}-model`} label="Model" value={value.model} onChange={(model) => set({ ...value, model })} options={modelOptions(options)} />
       <OptionSelect id={`exp-${key}-prompt`} label="Prompt" value={value.prompt} onChange={(prompt) => set({ ...value, prompt })} options={promptOptions(options)} />
+      <PromptSource name={value.prompt} />
     </fieldset>
   );
 
@@ -72,7 +73,7 @@ function NewExperiment({ options, open, onOpenChange, onStarted }: { options: Ev
           {variantFields("B", b, setB)}
           {same ? <p className="text-xs text-error">Pick a different model or prompt for one variant.</p> : null}
           {options.prompts.length < 2 ? (
-            <p className="text-xs text-muted-foreground">To test a prompt change, add a file like prompts/build-product.v4.md and it shows up here.</p>
+            <p className="text-xs text-muted-foreground">To test a prompt change, copy web/prompts/build-product.md to web/prompts/build-product.v4.md, edit it and bump its version. It shows up here.</p>
           ) : null}
         </div>
         <SheetFooter className="flex-row justify-end gap-2 border-t p-5">
