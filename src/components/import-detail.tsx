@@ -89,7 +89,7 @@ export function ImportDetail({ id }: { id: string }) {
         actions={<ImportActions job={job} showView={false} onDeleted={() => router.push("/imports")} />}
       />
 
-      {job.unmatched_photos.length ? <UnmatchedPhotos photos={job.unmatched_photos} /> : null}
+      {job.unmatched_photos.length ? <UnmatchedPhotos job={job} /> : null}
 
       <Card className="gap-4 py-4">
         <CardContent className="flex flex-col gap-4 px-4">

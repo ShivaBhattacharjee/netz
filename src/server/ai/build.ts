@@ -46,7 +46,7 @@ const jsonSchema = toResponseSchema(z.toJSONSchema(buildOutputSchema) as Record<
 export interface AiCallRecord {
   model: string;
   promptVersion: string;
-  task: "build" | "repair" | "translate" | "eval";
+  task: "build" | "repair" | "translate" | "eval" | "match";
   usage: Usage;
   latencyMs: number;
   ok: boolean;

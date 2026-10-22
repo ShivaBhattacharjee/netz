@@ -30,7 +30,7 @@ Browser ──► Next.js API routes ──► Postgres (source of truth)
 ```
 
 1. **Upload**: files stream to `STORAGE_DIR`, checked by magic bytes and size while streaming.
-2. **Parse**: header detection (EN/DE/FR), encoding repair, prices to integer cents, units to cm and grams, colour typo fixes, grouping into products and variants, duplicate and conflict detection, photo matching.
+2. **Parse**: header detection (EN/DE/FR), encoding repair, prices to integer cents, units to cm and grams, colour typo fixes, grouping into products and variants, duplicate and conflict detection, photo matching by the image column and by SKU in the file name. Photos left over are matched by Claude when the import finishes (see EDGE-CASES.md 1.20).
 3. **Route**: clean groups go to the fast model, messy groups and groups with photos to the strong model.
 4. **Build**: Claude returns structured JSON with per-field confidence and a quoted source cell for every claim and attribute. Code checks each quote against the sheet and removes what it cannot find, prices and SKUs never come from the model, and low confidence sends the product to review. System prompts are marked for prompt caching. Anthropic caches only prompts above a per-model minimum length, which the build prompt (about 1,900 tokens) passes on Sonnet; cost tracking reads the cached-token counts from each response, so spend is exact either way.
 5. **Translate**: title, description, SEO and attribute values go to German and French in one call, with brand names, placeholders and measurements protected. Manual fixes are never overwritten.
@@ -60,6 +60,7 @@ Every stage writes its result before the next one runs, jobs are idempotent, and
 
 - **Routing.** Clean groups go to Claude Haiku 5.5. A group goes to Claude Sonnet 5.5 only when it needs it: non-English source text, conflicting rows, negated or qualified claims, very long descriptions, many variants, or photos with no description (the only case where photos are sent to the model). The reasons are stored on the group.
 - **No repeated work.** Unchanged groups on re-upload make no AI call, stored results are reused on retry, duplicate photos are hashed once, and photos are resized to 768 px before they reach the model.
+- **AI photo matching only for leftovers.** Only photos the file-name rules could not match go to Haiku, one at a time; the product list sits in the cached system prompt, so each extra photo pays mostly for the image.
 - **One call per product, one per translation.** Not one call per field or per language.
 - **Prompt caching.** System prompts are marked for caching; cached-token counts from each response feed the cost tracker, so spend is exact.
 - **No Batch API, on purpose.** The Message Batches API would halve the price but can take up to 24 hours; a merchant watching an import finish should not wait that long. The pricing code already supports the batch discount if a "cheap and slow" import mode is added.

@@ -28,6 +28,10 @@ export interface RerunJob {
   note: string;
 }
 
+export interface MatchPhotosJob {
+  importId: string;
+}
+
 export interface TranslateJob {
   productId: string;
   /** Set on jobs queued before translations covered both languages in one call. */
@@ -86,6 +90,13 @@ export function enqueueRerun(jobs: RerunJob[], strong: boolean) {
   return queue(strong ? QUEUE.aiStrong : QUEUE.aiCheap).addBulk(
     jobs.map((data) => ({ name: "rerun", data, opts: { jobId: `${data.productId}__rerun__${stamp}`, attempts: 3 } })),
   );
+}
+
+export function enqueueMatchPhotos(importId: string) {
+  return queue(QUEUE.aiCheap).add("match-photos", { importId } satisfies MatchPhotosJob, {
+    jobId: `${importId}__photos__${Date.now().toString(36)}`,
+    attempts: 3,
+  });
 }
 
 export function enqueueTranslate(productId: string, sourceHash: string) {

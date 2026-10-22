@@ -227,6 +227,26 @@ export const actions = {
     }
   },
 
+  async matchPhotos(id: string) {
+    try {
+      await api(`/api/imports/${id}/photos/match`, { method: "POST" });
+      setState({ imports: state.imports.map((j) => (j.id === id ? { ...j, photo_match: "queued" } : j)) });
+      scheduleRefresh(false);
+    } catch (error) {
+      fail(error, "Could not start matching photos");
+    }
+  },
+
+  async resolvePhoto(importId: string, photoId: string, accept: boolean) {
+    try {
+      await api(`/api/imports/${importId}/photos/${photoId}`, { method: "POST", json: { accept } });
+      if (accept) toast.success("Photo attached");
+      scheduleRefresh(accept);
+    } catch (error) {
+      fail(error, accept ? "Could not attach the photo" : "Could not dismiss the suggestion");
+    }
+  },
+
   async raiseBudget(id: string, budgetUsd: number) {
     try {
       await api(`/api/imports/${id}/budget`, { method: "POST", json: { budget_usd: budgetUsd } });

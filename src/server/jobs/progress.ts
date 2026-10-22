@@ -1,7 +1,9 @@
-import { count, eq, inArray, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { importJob, type RowCounts, sourceRow } from "@/db/schema";
+import { env } from "../env";
 import { log } from "../log";
+import { enqueueMatchPhotos } from "../queues";
 import { redis } from "../redis";
 import { emitWebhook } from "../webhooks";
 
@@ -51,6 +53,7 @@ export async function refreshCounts(importId: string) {
 
   await publish({ type: completed ? "import.completed" : "import.progress", importId, storeId: current.storeId, counts });
   if (completed) {
+    await startPhotoMatch(importId);
     const [done] = await db.select({ costMicros: importJob.costMicros, fileName: importJob.fileName, finishedAt: importJob.finishedAt }).from(importJob).where(eq(importJob.id, importId));
     await emitWebhook(current.storeId, "import.completed", {
       import_id: importId,
@@ -61,6 +64,21 @@ export async function refreshCounts(importId: string) {
     });
   }
   return counts;
+}
+
+async function startPhotoMatch(importId: string) {
+  if (env().AI_MODE !== "anthropic") return;
+  try {
+    const [queued] = await db
+      .update(importJob)
+      .set({ photoMatch: "queued" })
+      .where(and(eq(importJob.id, importId), isNull(importJob.photoMatch), sql`cardinality(${importJob.unmatchedPhotos}) > 0`))
+      .returning({ id: importJob.id });
+    if (queued) await enqueueMatchPhotos(importId);
+  } catch (error) {
+    await db.update(importJob).set({ photoMatch: null }).where(and(eq(importJob.id, importId), eq(importJob.photoMatch, "queued")));
+    log.warn("could not start photo matching", { importId, error: (error as Error).message });
+  }
 }
 
 export async function failImport(importId: string, error: string) {

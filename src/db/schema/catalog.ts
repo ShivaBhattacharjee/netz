@@ -77,6 +77,7 @@ export const importJob = pgTable(
     counts: jsonb("counts").$type<RowCounts>().notNull().default({ pending: 0, done: 0, needs_review: 0, failed: 0 }),
     photoCount: integer("photo_count").notNull().default(0),
     unmatchedPhotos: text("unmatched_photos").array().notNull().default(sql`'{}'::text[]`),
+    photoMatch: text("photo_match").$type<"queued" | "running" | "done" | "failed">(),
     error: text("error"),
     pausedUntil: timestamp("paused_until"),
     costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
@@ -152,6 +153,9 @@ export const photo = pgTable(
     groupKey: text("group_key"),
     duplicateOf: text("duplicate_of"),
     reason: text("reason"),
+    suggestedGroupKey: text("suggested_group_key"),
+    suggestionConfidence: integer("suggestion_confidence"),
+    aiCheckedAt: timestamp("ai_checked_at"),
   },
   (t) => [uniqueIndex("photo_import_name_uq").on(t.importId, t.fileName), index("photo_group_idx").on(t.importId, t.groupKey)],
 );

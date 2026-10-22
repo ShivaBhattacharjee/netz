@@ -71,6 +71,13 @@
       "when": 1792560893768,
       "tag": "0009_warm_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792683438089,
+      "tag": "0010_known_tarot",
+      "breakpoints": true
     }
   ]
 }

@@ -94,11 +94,21 @@ export interface ImportJob {
   resume_in_seconds: number | null;
   error: string | null;
   created_at: string;
-  unmatched_photos: { name: string; url: string | null }[];
+  unmatched_photos: UnmatchedPhoto[];
+  photo_match: "queued" | "running" | "done" | "failed" | null;
   cost_micros: number;
   estimate_micros: number | null;
   budget_micros: number | null;
   budget_paused: boolean;
+}
+
+export interface UnmatchedPhoto {
+  id: string | null;
+  name: string;
+  url: string | null;
+  ai_checked: boolean;
+  suggestion: { product_id: string; title: string; confidence: number; reason: string } | null;
+  note: string | null;
 }
 
 export interface ImportRow {

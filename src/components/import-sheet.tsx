@@ -56,7 +56,7 @@ function Body({ job }: { job: ImportJob }) {
       </SheetHeader>
 
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5">
-        {job.unmatched_photos.length ? <UnmatchedPhotos photos={job.unmatched_photos} compact /> : null}
+        {job.unmatched_photos.length ? <UnmatchedPhotos job={job} compact /> : null}
         {job.total_rows > 0 ? (
           <section className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between text-sm">

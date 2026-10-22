@@ -7,6 +7,7 @@ import { classify, missingModels } from "@/server/ai/anthropic";
 import { type Env, env } from "@/server/env";
 import { abandonBuild, runBuild, runRerun } from "@/server/jobs/build";
 import { runEval } from "@/server/jobs/eval";
+import { abandonMatchPhotos, runMatchPhotos } from "@/server/jobs/match-photos";
 import { pauseAi } from "@/server/jobs/gate";
 import { abandonParse, runParse } from "@/server/jobs/parse";
 import { reconcile } from "@/server/jobs/reconcile";
@@ -16,10 +17,16 @@ import { deliver } from "@/server/webhooks";
 import { BACKOFF_STRATEGY, QUEUE, type QueueName, jitteredBackoff } from "@/server/queues";
 import { createRedis, redis } from "@/server/redis";
 
+function runAiJob(job: Job, worker: Worker) {
+  if (job.name === "rerun") return runRerun(job, worker);
+  if (job.name === "match-photos") return runMatchPhotos(job, worker);
+  return runBuild(job, worker);
+}
+
 const HANDLERS: Record<QueueName, (job: Job, worker: Worker) => Promise<unknown>> = {
   [QUEUE.parse]: (job) => runParse(job),
-  [QUEUE.aiCheap]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
-  [QUEUE.aiStrong]: (job, worker) => (job.name === "rerun" ? runRerun(job, worker) : runBuild(job, worker)),
+  [QUEUE.aiCheap]: runAiJob,
+  [QUEUE.aiStrong]: runAiJob,
   [QUEUE.translate]: runTranslate,
   [QUEUE.webhooks]: (job) => deliver(job.data, job.attemptsMade + 1),
   [QUEUE.eval]: (job) => runEval(job),
@@ -29,6 +36,7 @@ async function settleFailed(name: QueueName, job: Job, error: Error) {
   if (!(await job.isFailed())) return;
   if (name === QUEUE.parse) await abandonParse(job, error);
   else if ((name === QUEUE.aiCheap || name === QUEUE.aiStrong) && job.name === "build") await abandonBuild(job, error);
+  else if (name === QUEUE.aiCheap && job.name === "match-photos") await abandonMatchPhotos(job);
 }
 
 const isAiQueue = (name: QueueName) => name === QUEUE.aiCheap || name === QUEUE.aiStrong || name === QUEUE.translate;
