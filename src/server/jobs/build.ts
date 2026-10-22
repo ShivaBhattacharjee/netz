@@ -27,6 +27,8 @@ function isFinalAttempt(job: Job) {
 
 async function uniqueHandle(tx: Tx, storeId: string, title: string, productId: string | null) {
   const base = slugify(title);
+  // Two builds with the same title would otherwise both see the handle free and one insert would fail.
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`handle:${storeId}:${base}`}, 0))`);
   for (let n = 1; n < 50; n++) {
     const candidate = n === 1 ? base : `${base}-${n}`;
     const [taken] = await tx
