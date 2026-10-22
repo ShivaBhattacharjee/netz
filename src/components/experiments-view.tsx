@@ -372,7 +372,7 @@ export function ExperimentsView() {
                 ? "Compare two models or prompts on the same labelled products: accuracy, invented claims, cost per 1,000 products and speed."
                 : "Upload a supplier sheet with a labels.json of the expected products first, then compare two models or prompts on it."}
               action={data.sets.length ? createButton("Create experiment") : null}
-              className="py-8 [&_svg]:size-24"
+             
             />
           ) : null}
           {data.experiments.length ? (
@@ -424,7 +424,7 @@ export function ExperimentsView() {
             <EmptyState
               title="No labelled sets yet"
               description="Upload a supplier sheet and labels.json to run evaluations and compare prompts or models."
-              className="py-8 [&_svg]:size-24"
+             
             />
           )}
         </TabsContent>

@@ -169,7 +169,7 @@ export function EvaluationsView() {
                 ? "Run the pipeline on a labelled supplier sheet and see how accurate grouping, prices, categories, review decisions and claims are."
                 : "Upload a supplier sheet with a labels.json of the expected products, then run the pipeline on it and score every field."}
               action={data.sets.length ? startButton("Run first evaluation") : null}
-              className="py-8 [&_svg]:size-24"
+             
             />
           ) : null}
 
@@ -225,7 +225,7 @@ export function EvaluationsView() {
             <EmptyState
               title="No labelled sets yet"
               description="Upload a supplier sheet and labels.json to run evaluations and compare prompts or models."
-              className="py-8 [&_svg]:size-24"
+             
             />
           )}
         </TabsContent>
